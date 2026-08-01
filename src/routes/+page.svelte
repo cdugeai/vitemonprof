@@ -145,7 +145,7 @@
           </div>
           <div class="rounded-lg bg-green-50 p-4 text-center">
             <p class="text-3xl font-bold text-green-600">{stats_total_hours_last_7d}</p>
-            <p class="text-sm text-gray-600">Total Hours Missed (last 7 days)</p>
+            <p class="text-sm text-gray-600">Hours reported last week</p>
           </div>
           <div class="rounded-lg bg-yellow-50 p-4 text-center">
             <p class="text-3xl font-bold text-yellow-600">{stats_schools_affected}</p>
@@ -163,11 +163,9 @@
   <!-- Recent reports-->
   <section class="mt-12">
     {#await data.missed_hours}
-      <p>LOADING</p>
-      <RecentReports missed_hours={[]} />
+      <RecentReports missed_hours={[]} is_loading={true} />
     {:then mh}
-      <p>LOADED</p>
-      <RecentReports missed_hours={mh} />
+      <RecentReports missed_hours={mh} is_loading={false} />
     {/await}
   </section>
 </div>
