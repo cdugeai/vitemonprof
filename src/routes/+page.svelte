@@ -8,8 +8,11 @@
   import type { School } from '$lib/types/school';
   import PresenterSchool from '$lib/components/form_class/PresenterSchool.svelte';
 
+  const DEFAULT_NB_HOURS = 1;
+
   let selectedClass: string = $state('none');
   let selectedSchool: School | null = $state(null);
+  let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -58,9 +61,23 @@
               <SelectorClass bind:selectedClass />
             </div>
 
-            <div class="space-y-2">
-              <Label for="date">Date Missed</Label>
-              <Input id="date" type="date" />
+            <div class="flex flex-wrap gap-x-3">
+              <div class="space-y-2">
+                <Label for="date">Date Missed</Label>
+                <Input id="date" type="date" />
+              </div>
+              <div class="space-y-2">
+                <Label for="nb_hours">Number of class hours</Label>
+                <Input
+                  id="nb_hours"
+                  type="number"
+                  max="4"
+                  min="1"
+                  step="1"
+                  defaultValue={DEFAULT_NB_HOURS}
+                  bind:value={selectedNbHours}
+                />
+              </div>
             </div>
 
             <Button type="submit" class="w-full" variant="outline">Log Hours</Button>
