@@ -1,4 +1,4 @@
-import type { MissedHour } from '$lib/types/missedHours';
+import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
 
 const data: MissedHour[] = [];
 const maxWaitTimeS = 3;
@@ -15,4 +15,23 @@ export async function getMissedHour(): Promise<MissedHour[]> {
   console.log({ mh_from_db: data });
 
   return data;
+}
+
+export async function computeStats(): Promise<MissedHourStats> {
+  const mh = await getMissedHour();
+
+  const sum_hours = (mh_array: MissedHour[]) =>
+    mh_array.reduce(
+      (a, b) => ({
+        nbHours: a.nbHours + b.nbHours,
+      }),
+      { nbHours: 0 }
+    ).nbHours;
+
+  return {
+    total_hours: sum_hours(mh),
+    total_hours_last_7d: sum_hours(mh.filter((m) => false)), // TODO implement
+    classes_affected: new Set(mh.map((m) => m.class)).size,
+    schools_affected: new Set(mh.map((m) => m.schoolId)).size,
+  };
 }
