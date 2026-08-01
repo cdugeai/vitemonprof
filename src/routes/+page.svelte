@@ -8,6 +8,11 @@
   import type { School } from '$lib/types/school';
   import PresenterSchool from '$lib/components/form_class/PresenterSchool.svelte';
   import RecentReports from '$lib/components/RecentReports.svelte';
+  import FormHint from '$lib/components/form_class/FormHint.svelte';
+  import * as Alert from '$lib/components/ui/alert';
+  import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+  import type { PageProps } from './$types';
+  import { canSubmitForm, firstMissingRequirement } from '$lib/utils_form';
 
   const DEFAULT_NB_HOURS = 1;
 
@@ -16,9 +21,12 @@
   let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
   let selectedDate: string = $state('');
 
-  import type { PageProps } from './$types';
+  let { data, form }: PageProps = $props();
 
-  let { data }: PageProps = $props();
+  // Client-side guardrail: reuses FormHint's rules so the button and the hint
+  // can never disagree. This only improves UX — the server action stays the real
+  // validation boundary, since a disabled button is trivial to bypass.
+  let canSubmit = $derived(canSubmitForm({ selectedSchool, selectedClass, selectedDate }));
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -55,6 +63,8 @@
           <Card.Title>Log Missed Hours</Card.Title>
         </Card.Header>
         <Card.Content>
+          <FormHint {selectedSchool} {selectedClass} {selectedDate} />
+
           <form method="POST" class="space-y-4">
             <div class="space-y-2">
               <Label for="school">School</Label>
@@ -89,7 +99,17 @@
               </div>
             </div>
 
-            <Button type="submit" class="w-full" variant="outline">Log Hours</Button>
+            {#if !canSubmit && form}
+              <Alert.Root variant="destructive">
+                <CircleAlertIcon />
+                <Alert.Title>Could not log those hours</Alert.Title>
+                <Alert.Description>{form.error}</Alert.Description>
+              </Alert.Root>
+            {/if}
+
+            <Button type="submit" class="w-full" variant="outline" disabled={!canSubmit}>
+              Log Hours
+            </Button>
           </form>
         </Card.Content>
       </Card.Root>
