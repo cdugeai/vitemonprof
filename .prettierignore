@@ -1,10 +1,8 @@
-# Package Managers
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
-bun.lock
-bun.lockb
-
-# Miscellaneous
-/static/
-/drizzle/
+node_modules
+dist
+build
+.svelte-kit
+.vite
+coverage
+*.lock
+*.log
