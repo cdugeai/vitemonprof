@@ -6,6 +6,7 @@
   import MapMain from '$lib/components/MapMain.svelte';
   import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
   import type { School } from '$lib/types/school';
+  import PresenterSchool from '$lib/components/form_class/PresenterSchool.svelte';
 
   let selectedClass: string = $state('none');
   let selectedSchool: School | null = $state(null);
@@ -49,12 +50,8 @@
           <form class="space-y-4">
             <div class="space-y-2">
               <Label for="school">School</Label>
-              <Input
-                id="school"
-                type="text"
-                placeholder="Select school..."
-                value={selectedSchool?.name}
-              />
+              <Input id="school" type="text" value={selectedSchool?.id} hidden />
+              <PresenterSchool school={selectedSchool} />
             </div>
 
             <div class="space-y-2">
