@@ -6,6 +6,12 @@
   import MapLayerSchool from './map/MapLayerSchool.svelte';
   import { MAP_DEFAULT_LAT, MAP_DEFAULT_LNG, MAP_DEFAULT_ZOOM } from '$lib/constants';
 
+  interface Props {
+    selectedSchoolId: string | null;
+  }
+
+  let { selectedSchoolId = $bindable(null) }: Props = $props();
+
   let schools = $state<School[]>([]);
 
   onMount(async () => {
@@ -24,7 +30,7 @@
   zoom={MAP_DEFAULT_ZOOM}
   center={{ lng: MAP_DEFAULT_LNG, lat: MAP_DEFAULT_LAT }}
 >
-  <MapLayerSchool {schools} />
+  <MapLayerSchool {schools} bind:selectedSchoolId />
 
   <NavigationControl />
   <ScaleControl />

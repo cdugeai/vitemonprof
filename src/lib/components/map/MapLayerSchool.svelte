@@ -19,17 +19,29 @@
 
   interface Props {
     schools: School[];
+    /** The school whose popup is currently open, or `null` when none is. */
+    selectedSchoolId: string | null;
   }
 
-  const { schools }: Props = $props();
+  let {
+    schools,
+    // eslint-disable-next-line no-useless-assignment
+    selectedSchoolId = $bindable(),
+  }: Props = $props();
+
+  const byId = $derived(new Map(schools.map((school) => [school.id, school])));
+
+  let selectedSchool = $state.raw<School | null>(null);
+
+  // Update selectedSchoolId on selectedSchool update
+  $effect(() => {
+    selectedSchoolId = selectedSchool ? selectedSchool.id : null;
+  });
 
   const mapCtx = getMapContext();
 
   /** The clustered source instance — needed for `getClusterExpansionZoom()`. */
   let source = $state.raw<maplibregl.GeoJSONSource | undefined>(undefined);
-
-  /** The school whose popup is currently open, or `null` when none is. */
-  let selectedSchool = $state.raw<School | null>(null);
 
   /**
    * Clustering is done by MapLibre on a GeoJSON source, so the schools have to
@@ -45,8 +57,6 @@
       geometry: { type: 'Point', coordinates: [school.longitude, school.latitude] },
     })),
   });
-
-  const byId = $derived(new Map(schools.map((school) => [school.id, school])));
 
   function setCursor(cursor: string) {
     if (mapCtx.map) mapCtx.map.getCanvas().style.cursor = cursor;
