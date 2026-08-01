@@ -20,18 +20,16 @@
   interface Props {
     schools: School[];
     /** The school whose popup is currently open, or `null` when none is. */
-    selectedSchoolId: string | null;
+    selectedSchool: School | null;
   }
 
   let {
     schools,
     // eslint-disable-next-line no-useless-assignment
-    selectedSchoolId = $bindable(),
+    selectedSchool = $bindable(),
   }: Props = $props();
 
   const byId = $derived(new Map(schools.map((school) => [school.id, school])));
-
-  let selectedSchool = $state.raw<School | null>(null);
 
   // Update selectedSchoolId on selectedSchool update
   $effect(() => {
@@ -39,7 +37,7 @@
   });
 
   const mapCtx = getMapContext();
-
+  $inspect(selectedSchool);
   /** The clustered source instance — needed for `getClusterExpansionZoom()`. */
   let source = $state.raw<maplibregl.GeoJSONSource | undefined>(undefined);
 
