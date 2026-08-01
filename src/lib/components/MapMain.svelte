@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import type { School } from '$lib/types/school';
   import MapLayerSchool from './map/MapLayerSchool.svelte';
+  import { MAP_DEFAULT_LAT, MAP_DEFAULT_LNG, MAP_DEFAULT_ZOOM } from '$lib/constants';
 
   let schools = $state<School[]>([]);
 
@@ -20,8 +21,8 @@
 <MapLibre
   class="h-full w-full"
   style="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
-  zoom={4}
-  center={{ lng: 2.3, lat: 46.2 }}
+  zoom={MAP_DEFAULT_ZOOM}
+  center={{ lng: MAP_DEFAULT_LNG, lat: MAP_DEFAULT_LAT }}
 >
   <MapLayerSchool {schools} />
 
