@@ -31,13 +31,8 @@
 
   const byId = $derived(new Map(schools.map((school) => [school.id, school])));
 
-  // Update selectedSchoolId on selectedSchool update
-  $effect(() => {
-    selectedSchoolId = selectedSchool ? selectedSchool.id : null;
-  });
-
   const mapCtx = getMapContext();
-  $inspect(selectedSchool);
+
   /** The clustered source instance — needed for `getClusterExpansionZoom()`. */
   let source = $state.raw<maplibregl.GeoJSONSource | undefined>(undefined);
 
