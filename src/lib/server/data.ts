@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type { School } from '$lib/types/school';
+import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre-sample100.csv?raw';
 
 let cachedSchools: School[] | null = null;
 
@@ -39,9 +38,7 @@ function parseCSV(content: string): School[] {
 
 export function getSchools(): School[] {
   if (cachedSchools === null) {
-    const csvPath = join(process.cwd(), 'data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre-sample100.csv');
-    const content = readFileSync(csvPath, 'utf-8');
-    cachedSchools = parseCSV(content);
+    cachedSchools = parseCSV(csvContent);
   }
 
   return cachedSchools;

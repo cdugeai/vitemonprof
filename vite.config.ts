@@ -25,6 +25,7 @@ export default defineConfig({
       },
     }),
   ],
+  assetsInclude: ['**/*.csv'],
   optimizeDeps: {
     exclude: ['svelte-maplibre-gl'],
   },
