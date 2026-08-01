@@ -5,14 +5,14 @@
 
 <nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="flex h-16 items-center justify-between">
+    <div class="flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2">
       <!-- Logo/Title -->
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <a href="/" class="text-2xl font-bold transition hover:text-blue-100"> ViteMonProf </a>
       </div>
 
       <!-- Navigation Links -->
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <Button
           variant={$page.url.pathname === '/' ? 'default' : 'ghost'}
           class={$page.url.pathname === '/'
