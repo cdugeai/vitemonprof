@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RecentReports from '$lib/components/RecentReports.svelte';
   import * as Card from '$lib/components/ui/card';
 </script>
 
@@ -49,15 +50,6 @@
     </Card.Root>
 
     <!-- Recent Reports -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Recent Reports</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <div class="space-y-3">
-          <div class="py-8 text-center text-gray-500">No reports yet</div>
-        </div>
-      </Card.Content>
-    </Card.Root>
+    <RecentReports missed_hours={[]} />
   </div>
 </div>

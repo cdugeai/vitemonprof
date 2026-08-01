@@ -7,6 +7,7 @@
   import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
   import type { School } from '$lib/types/school';
   import PresenterSchool from '$lib/components/form_class/PresenterSchool.svelte';
+  import RecentReports from '$lib/components/RecentReports.svelte';
 
   const DEFAULT_NB_HOURS = 1;
 
@@ -14,6 +15,10 @@
   let selectedSchool: School | null = $state(null);
   let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
   let selectedDate: string = $state('');
+
+  import type { PageProps } from './$types';
+
+  let { data }: PageProps = $props();
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -118,5 +123,16 @@
         </div>
       </Card.Content>
     </Card.Root>
+  </section>
+
+  <!-- Recent reports-->
+  <section class="mt-12">
+    {#await data.missed_hours}
+      <p>LOADING</p>
+      <RecentReports missed_hours={[]} />
+    {:then mh}
+      <p>LOADED</p>
+      <RecentReports missed_hours={mh} />
+    {/await}
   </section>
 </div>

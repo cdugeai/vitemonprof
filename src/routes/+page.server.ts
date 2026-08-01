@@ -3,6 +3,13 @@ import type { Actions } from './$types';
 import { addMissedHour, getMissedHour } from '$lib/server/db_tmp';
 import { randomUUID } from 'crypto';
 
+import type { PageLoad } from './$types';
+
+export const load: PageLoad = ({ params }) => {
+  return {
+    missed_hours: getMissedHour(),
+  };
+};
 export const actions = {
   default: async ({ request }) => {
     if (request.method !== 'POST') {
