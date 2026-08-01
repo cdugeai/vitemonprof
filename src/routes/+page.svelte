@@ -59,8 +59,8 @@
             </div>
 
             <div class="space-y-2">
-              <Label for="time">Date & Time Missed</Label>
-              <Input id="time" type="datetime-local" />
+              <Label for="date">Date Missed</Label>
+              <Input id="date" type="date" />
             </div>
 
             <Button type="submit" class="w-full" variant="outline">Log Hours</Button>
