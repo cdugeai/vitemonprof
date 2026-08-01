@@ -65,7 +65,27 @@
         </Card.Header>
         <Card.Content class="p-0">
           <div class="h-96 rounded-lg bg-gray-100">
-            <MapMain bind:selectedSchool />
+            <!--
+              MapLibre needs a WebGL context, which a browser can refuse (iOS in
+              Low Power Mode, memory pressure, WebGL disabled). Without a boundary
+              that throw escapes to SvelteKit and replaces the whole route with its
+              error page — the map takes down the form, the stats and the reports
+              with it. Contained here, only the map degrades.
+            -->
+            <svelte:boundary>
+              <MapMain bind:selectedSchool />
+
+              {#snippet failed(error, reset)}
+                <div class="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+                  <p class="text-sm text-gray-700">
+                    The map could not be loaded on this device. You can still pick a school by
+                    trying again, or use the form below.
+                  </p>
+                  <p class="text-xs break-all text-gray-500">{error}</p>
+                  <Button variant="outline" size="sm" onclick={reset}>Retry</Button>
+                </div>
+              {/snippet}
+            </svelte:boundary>
           </div>
         </Card.Content>
       </Card.Root>
