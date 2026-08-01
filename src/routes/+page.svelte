@@ -16,10 +16,9 @@
   <!-- Hero Section -->
   <section class="mb-12">
     <div class="rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
-      <h1 class="mb-4 text-4xl font-bold">Track Missing Professors</h1>
+      <h1 class="mb-4 text-4xl font-bold">Track Missed Hours</h1>
       <p class="text-lg">
-        Help your school community stay informed about class cancellations and professor
-        availability.
+        Keep track of missed classes and accumulated hours across your school community.
       </p>
     </div>
   </section>
@@ -44,7 +43,7 @@
     <section>
       <Card.Root>
         <Card.Header>
-          <Card.Title>Report Missing Professor</Card.Title>
+          <Card.Title>Log Missed Hours</Card.Title>
         </Card.Header>
         <Card.Content>
           <form class="space-y-4">
@@ -55,21 +54,16 @@
             </div>
 
             <div class="space-y-2">
-              <Label for="professor">Professor Name</Label>
-              <Input id="professor" type="text" placeholder="Professor name..." />
-            </div>
-
-            <div class="space-y-2">
               <Label for="class">Class</Label>
               <SelectorClass bind:selectedClass />
             </div>
 
             <div class="space-y-2">
-              <Label for="time">Time Missed</Label>
+              <Label for="time">Date & Time Missed</Label>
               <Input id="time" type="datetime-local" />
             </div>
 
-            <Button type="submit" class="w-full" variant="outline">Submit Report</Button>
+            <Button type="submit" class="w-full" variant="outline">Log Hours</Button>
           </form>
         </Card.Content>
       </Card.Root>
@@ -86,7 +80,7 @@
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div class="rounded-lg bg-blue-50 p-4 text-center">
             <p class="text-3xl font-bold text-blue-600">0</p>
-            <p class="text-sm text-gray-600">Total Reports</p>
+            <p class="text-sm text-gray-600">Total Hours Missed</p>
           </div>
           <div class="rounded-lg bg-yellow-50 p-4 text-center">
             <p class="text-3xl font-bold text-yellow-600">0</p>
@@ -94,7 +88,7 @@
           </div>
           <div class="rounded-lg bg-red-50 p-4 text-center">
             <p class="text-3xl font-bold text-red-600">0</p>
-            <p class="text-sm text-gray-600">Professors Flagged</p>
+            <p class="text-sm text-gray-600">Classes Affected</p>
           </div>
           <div class="rounded-lg bg-green-50 p-4 text-center">
             <p class="text-3xl font-bold text-green-600">0</p>

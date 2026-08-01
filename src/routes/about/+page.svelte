@@ -10,9 +10,9 @@
       <section>
         <h2 class="mb-4 text-2xl font-bold">Our Mission</h2>
         <p class="text-gray-700">
-          ViteMonProf is dedicated to improving transparency and accountability in educational
-          institutions by tracking missing professors and class cancellations. We empower students
-          and staff to report and monitor professor availability in real-time.
+          ViteMonProf helps students track missed class hours due to cancellations. Our goal is to
+          provide transparency about how much instructional time is being lost and help students and
+          administrators identify patterns across their schools.
         </p>
       </section>
 
@@ -20,9 +20,9 @@
         <h2 class="mb-4 text-2xl font-bold">How It Works</h2>
         <ol class="list-inside list-decimal space-y-2 text-gray-700">
           <li>Click on your school on the interactive map</li>
-          <li>Report a missing professor or cancelled class</li>
+          <li>Log a missed class or cancelled session</li>
           <li>Include the class name and time of the incident</li>
-          <li>View statistics and patterns across your school community</li>
+          <li>View statistics and patterns to identify trends at your school</li>
         </ol>
       </section>
 
@@ -30,10 +30,10 @@
         <h2 class="mb-4 text-2xl font-bold">Features</h2>
         <ul class="list-inside list-disc space-y-2 text-gray-700">
           <li>Interactive map for easy school selection</li>
-          <li>Real-time reporting system</li>
+          <li>Quick logging of missed class hours</li>
           <li>Statistical dashboard with trends and insights</li>
-          <li>Anonymous reporting for peace of mind</li>
-          <li>Community-driven accountability</li>
+          <li>Comprehensive tracking across all schools</li>
+          <li>Identify patterns in class cancellations</li>
         </ul>
       </section>
 
