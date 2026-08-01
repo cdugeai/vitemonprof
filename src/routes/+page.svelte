@@ -6,7 +6,7 @@
   import MapMain from '$lib/components/MapMain.svelte';
   import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
 
-  let selectedClass = undefined;
+  let selectedClass: string = $state('none');
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -57,7 +57,7 @@
 
             <div class="space-y-2">
               <Label for="class">Class</Label>
-              <SelectorClass />
+              <SelectorClass bind:selectedClass />
             </div>
 
             <div class="space-y-2">
