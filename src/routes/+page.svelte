@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
+  import MapMain from '$lib/components/MapMain.svelte';
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -29,6 +30,7 @@
           <div class="flex h-96 items-center justify-center rounded-lg bg-gray-100">
             <div class="text-center text-gray-600">
               <p class="text-lg font-semibold">Interactive Map</p>
+              <MapMain />
               <p class="text-sm">Click on a school to report missing professors</p>
             </div>
           </div>

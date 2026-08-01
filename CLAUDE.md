@@ -35,3 +35,7 @@ Styling is **Tailwind CSS v4** (via `@tailwindcss/vite`) plus **shadcn-svelte** 
 - For any non-trivial UI primitive (button, dialog, dropdown, card, input, etc.), check whether shadcn-svelte already has it before hand-rolling one: `npx shadcn-svelte@latest add <component>`. This installs the component's source into `src/lib/components/ui/<component>` (per `components.json`) so it's yours to edit directly.
 - `components.json` config: style `vega`, base color `neutral`, icons via `lucide` (`@lucide/svelte`), aliases `$lib/components`, `$lib/components/ui`, `$lib/utils`, `$lib/hooks`.
 - Use the `cn()` helper from `src/lib/utils.ts` (clsx + tailwind-merge) when a component needs to merge/override incoming `class` props — this is the standard shadcn-svelte pattern.
+
+## Maplibre GL
+
+Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.
