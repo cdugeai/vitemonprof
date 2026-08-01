@@ -50,6 +50,6 @@
     </Card.Root>
 
     <!-- Recent Reports -->
-    <RecentReports missed_hours={[]} />
+    <RecentReports missed_hours={[]} is_loading={false} />
   </div>
 </div>
