@@ -1,4 +1,6 @@
 import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
+import type { School } from '$lib/types/school';
+import { getSchools } from './data';
 
 const data: MissedHour[] = [];
 const maxWaitTimeS = 3;
@@ -40,4 +42,18 @@ export async function computeStats(): Promise<MissedHourStats> {
     classes_affected: new Set(mh.map((m) => m.class)).size,
     schools_affected: new Set(mh.map((m) => m.schoolId)).size,
   };
+}
+
+/**
+ * Get info on a list of schools using their ID
+ * @param school_ids Array of schools ID
+ * @returns Map<schools_id, School>
+ **/
+export async function getSchoolsInfo(school_ids: string[]): Promise<Map<string, School>> {
+  const all_schools = await getSchools();
+  await delay(Math.random() * maxWaitTimeS * 1000);
+
+  return new Map<string, School>(
+    all_schools.filter((s1) => school_ids.includes(s1.id)).map((s2) => [s2.id, s2])
+  );
 }
