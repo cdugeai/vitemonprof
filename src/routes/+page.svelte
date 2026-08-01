@@ -26,13 +26,9 @@
         <Card.Header>
           <Card.Title>School Locator</Card.Title>
         </Card.Header>
-        <Card.Content>
-          <div class="flex h-96 items-center justify-center rounded-lg bg-gray-100">
-            <div class="text-center text-gray-600">
-              <p class="text-lg font-semibold">Interactive Map</p>
-              <MapMain />
-              <p class="text-sm">Click on a school to report missing professors</p>
-            </div>
+        <Card.Content class="p-0">
+          <div class="h-96 rounded-lg bg-gray-100">
+            <MapMain />
           </div>
         </Card.Content>
       </Card.Root>
