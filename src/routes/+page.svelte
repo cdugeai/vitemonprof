@@ -12,7 +12,7 @@
   import * as Alert from '$lib/components/ui/alert';
   import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
   import type { PageProps } from './$types';
-  import { canSubmitForm } from '$lib/utils_form';
+  import { canSubmitForm, todayLocalISO } from '$lib/utils_form';
   import { onMount } from 'svelte';
 
   const DEFAULT_NB_HOURS = 1;
@@ -20,7 +20,9 @@
   let selectedClass: string = $state('none');
   let selectedSchool: School | null = $state(null);
   let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
-  let selectedDate: string = $state('');
+  // Defaults to today: reporting a class you missed today is by far the common
+  // case. Still `required` and still bound, so the user can freely change it.
+  let selectedDate: string = $state(todayLocalISO());
 
   let stats_total_hours = $state('-');
   let stats_total_hours_last_7d = $state('-');
