@@ -21,6 +21,8 @@ export const actions = {
     const className = formData.get('class');
     const date = formData.get('date');
     const nbHours = formData.get('nbHours');
+    const dept = formData.get('dept');
+    const school_name = formData.get('school_name');
 
     // Validation
     if (!schoolId) {
@@ -48,6 +50,8 @@ export const actions = {
       date,
       nbHours: hoursNum,
       createdAt: new Date().toISOString(),
+      dept,
+      school_name,
     };
 
     console.log('Form submitted:', entry);

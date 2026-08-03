@@ -7,10 +7,10 @@
   import { MAP_DEFAULT_LAT, MAP_DEFAULT_LNG, MAP_DEFAULT_ZOOM } from '$lib/constants';
 
   interface Props {
-    selectedSchool: School | null;
+    selectedSchool: School | undefined;
   }
 
-  let { selectedSchool = $bindable(null) }: Props = $props();
+  let { selectedSchool = $bindable(undefined) }: Props = $props();
 
   let schools = $state<School[]>([]);
 

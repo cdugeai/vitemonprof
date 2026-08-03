@@ -65,21 +65,21 @@
 <!-- Recent Reports -->
 <Card.Root>
   <Card.Header>
-    <Card.Title>Recent Reports</Card.Title>
+    <Card.Title>Rapports récents</Card.Title>
   </Card.Header>
   <Card.Content>
     <div class="space-y-3">
       {#if is_loading}
-        <div class="py-8 text-center text-gray-500">Loading recent reports...</div>
+        <div class="py-8 text-center text-gray-500">Chargement des rapports récents...</div>
       {:else if missed_hours.length < 1}
-        <div class="py-8 text-center text-gray-500">No reports yet</div>
+        <div class="py-8 text-center text-gray-500">Aucun rapport pour le moment</div>
       {:else}
         {#each missed_hours_to_display as mh (mh.uuid)}
           {@const school_info = schools_infos.get(mh.schoolId)}
           <div class="flex gap-2">
-            <p>{Math.trunc(diffMinutes(mh.createdAt))} min ago -</p>
+            <p>{Math.trunc(diffMinutes(mh.createdAt))} min -</p>
             <p>{school_info?.name} ({school_info?.postalCode}) -</p>
-            <p>{mh.nbHours} hour(s) in {mh.class}</p>
+            <p>{mh.nbHours} heure(s) dans {mh.class}</p>
           </div>
         {/each}
       {/if}

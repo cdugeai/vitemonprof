@@ -1,5 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { getSchools } from '$lib/server/data';
+import { getSchools, getSchoolsFilterName } from '$lib/server/data';
 import { getSchoolsInfo } from '$lib/server/db_tmp';
 import type { RequestHandler } from './$types';
 
@@ -7,22 +7,36 @@ import type { RequestHandler } from './$types';
 const MAX_IDS = 50;
 
 /**
- * GET /api/schools            -> every school
- * GET /api/schools?id=a&id=b  -> just those schools (unknown ids are skipped)
+ * Upper bound on search hits. A one-letter query matches most of the dataset, and the
+ * caller is a typeahead that only ever shows a handful — so cap it server-side.
+ */
+const MAX_SEARCH_RESULTS = 10;
+
+/**
+ * GET /api/schools                 -> every school
+ * GET /api/schools?id=a&id=b       -> just those schools (unknown ids are skipped)
+ * GET /api/schools?query_string=x  -> schools whose name or postal code contains `x`
+ *
+ * `id` takes precedence over `query_string` if both are supplied.
  */
 export const GET: RequestHandler = async ({ url }) => {
   const ids = url.searchParams.getAll('id');
+  const queryString = url.searchParams.get('query_string')?.trim() ?? '';
 
-  if (ids.length === 0) {
-    return json(getSchools());
+  if (ids.length > 0) {
+    if (ids.length > MAX_IDS) {
+      error(400, `Too many ids: ${ids.length} (max ${MAX_IDS})`);
+    }
+
+    const schools = await getSchoolsInfo(ids);
+
+    // A Map has no JSON representation — send an array and let the caller re-index it.
+    return json([...schools.values()]);
   }
 
-  if (ids.length > MAX_IDS) {
-    error(400, `Too many ids: ${ids.length} (max ${MAX_IDS})`);
+  if (queryString) {
+    return json(getSchoolsFilterName(queryString).slice(0, MAX_SEARCH_RESULTS));
   }
 
-  const schools = await getSchoolsInfo(ids);
-
-  // A Map has no JSON representation — send an array and let the caller re-index it.
-  return json([...schools.values()]);
+  return json(getSchools());
 };

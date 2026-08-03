@@ -43,3 +43,27 @@ export function getSchools(): School[] {
 
   return cachedSchools;
 }
+
+/**
+ * Lowercase and strip diacritics so "Vitré" and "VITRE" are the same needle.
+ * NFD splits "é" into "e" + combining accent; the regex then drops the accent.
+ */
+function normalize(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
+/** Schools whose name or postal code contains `query_string` (case/accent-insensitive). */
+export function getSchoolsFilterName(query_string: string): School[] {
+  const needle = normalize(query_string.trim());
+
+  if (needle === '') {
+    return getSchools();
+  }
+
+  return getSchools().filter(
+    (sc) => normalize(sc.name).includes(needle) || sc.postalCode.includes(needle)
+  );
+}

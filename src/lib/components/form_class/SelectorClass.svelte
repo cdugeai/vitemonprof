@@ -1,10 +1,11 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select/index.js';
+  import { Label } from '$lib/components/ui/label';
 
   let {
-    selectedClass = $bindable('none'),
+    selectedClass = $bindable(undefined),
   }: {
-    selectedClass: string;
+    selectedClass: string | undefined;
   } = $props();
 
   const classOptions = [
@@ -27,12 +28,13 @@
   let selectedClassLabel = $derived(classOptions.find((c) => c.value == selectedClass));
 
   const triggerContent = $derived(
-    classOptions.find((f) => f.value === selectedClass)?.label ?? 'Select a class'
+    classOptions.find((f) => f.value === selectedClass)?.label ?? 'Sélectionner une classe'
   );
 </script>
 
 <Select.Root type="single" name="selected_class" bind:value={selectedClass}>
-  <Select.Trigger class="w-45">
+  <Label for="sel-class" class="px-1">Classe</Label>
+  <Select.Trigger class="bg-mybeige-bg w-full" id="sel-class">
     {triggerContent}
   </Select.Trigger>
   <Select.Content>
