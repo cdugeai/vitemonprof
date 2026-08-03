@@ -28,6 +28,7 @@
     selectedDate?: CalendarDate;
     nbHours?: number;
     canSubmit: boolean;
+    submitting?: boolean;
   }
 
   let {
@@ -37,6 +38,7 @@
     selectedDate = $bindable(),
     nbHours = $bindable(),
     canSubmit = $bindable(),
+    submitting = false,
   }: Props = $props();
 
   /**
@@ -122,9 +124,9 @@
       </Tabs.Root>
       <FormHint {selectedSchool} {selectedClass} selectedDate={dateToStr(selectedDate)} />
 
-      <Button type="submit" class="mb-3 w-full rounded-xl p-5" disabled={!canSubmit}>
+      <Button type="submit" class="mb-3 w-full rounded-xl p-5" disabled={!canSubmit || submitting}>
         <Send />
-        <span>Envoyer le rapport</span>
+        <span>{submitting ? 'Envoi en cours…' : 'Envoyer le rapport'}</span>
       </Button>
     </Card.Content>
   </Card.Root>
