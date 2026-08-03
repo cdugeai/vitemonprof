@@ -17,8 +17,8 @@
 
 <Label for="nb_hours">Nombre d'heures de classe</Label>
 <div class="flex gap-1">
-  <Button variant="outline" class="px-15" onclick={dec}>-</Button>
-  <Button variant="default" class="px-15" onclick={inc}>+</Button>
+  <Button variant="outline" class="px-10 sm:px-15" onclick={dec}>-</Button>
+  <Button variant="default" class="px-10 sm:px-15" onclick={inc}>+</Button>
   <Input
     id="nb_hours"
     type="number"
