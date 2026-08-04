@@ -136,6 +136,7 @@
       <Card.Root>
         <Card.Header>
           <Card.Title>Aperçu des statistiques</Card.Title>
+          <Card.Description>Quelques statistiques à propos des signalements.</Card.Description>
         </Card.Header>
         <Card.Content>
           <!--
@@ -169,7 +170,7 @@
 </div>
 
 {#snippet stats(total: string, last7d: string, schools: string, classes: string)}
-  <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+  <div class="grid grid-cols-2 gap-4">
     <div class="rounded-lg bg-blue-50 p-4 text-center">
       <p class="text-3xl font-bold text-blue-600">{total}</p>
       <p class="text-sm text-gray-600">Total des heures manquées</p>
