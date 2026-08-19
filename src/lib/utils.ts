@@ -46,3 +46,46 @@ export function normalizeText(value: string): string {
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase();
 }
+
+/**
+ * Steps for `formatRelativeTime`, each holding how many of *this* unit make up
+ * the next one. Walked in order until the elapsed time fits inside one.
+ */
+const TIME_DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
+  { amount: 60, unit: 'second' },
+  { amount: 60, unit: 'minute' },
+  { amount: 24, unit: 'hour' },
+  { amount: 7, unit: 'day' },
+  { amount: 4.34524, unit: 'week' },
+  { amount: 12, unit: 'month' },
+  { amount: Number.POSITIVE_INFINITY, unit: 'year' },
+];
+
+/**
+ * « il y a 3 minutes », « il y a 2 jours » — an elapsed time that stays readable
+ * at any age.
+ *
+ * `Intl.RelativeTimeFormat` rather than hand-built strings: it gets French
+ * agreement right ("il y a 1 minute" vs "il y a 2 minutes") for free, and
+ * `numeric: 'auto'` turns the smallest gaps into « maintenant » instead of a
+ * literal "il y a 0 seconde".
+ *
+ * The locale is pinned to `fr` on purpose. The UI is French throughout, so
+ * following the browser's locale would produce "3 minutes ago" sitting inside a
+ * French sentence — worse than being consistently one language.
+ *
+ * `now` is injectable so this is testable without faking the clock.
+ */
+export function formatRelativeTime(isoTimestamp: string, now: number = Date.now()): string {
+  const formatter = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
+  // Negative for the past, which is the sign `Intl` expects.
+  let delta = (new Date(isoTimestamp).getTime() - now) / 1000;
+
+  for (const { amount, unit } of TIME_DIVISIONS) {
+    if (Math.abs(delta) < amount) return formatter.format(Math.round(delta), unit);
+    delta /= amount;
+  }
+
+  // Unreachable: the last division is Infinity, so the loop always returns.
+  return formatter.format(Math.round(delta), 'year');
+}
