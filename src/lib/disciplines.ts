@@ -85,21 +85,6 @@ export const DISCIPLINES = [
 
 export type Discipline = (typeof DISCIPLINES)[number]['id'];
 
-/**
- * Options for one `<Select.Group>`, in declaration order.
- *
- * The `readonly DisciplineOption[]` return type is deliberate. `as const` gives
- * every entry its own exact literal type, so entries without a `note` genuinely
- * do not have the property and the union has no common `note` to read — the
- * template can't write `discipline.note` at all. Widening here restores the
- * uniform `note?: string` shape for rendering, while `Discipline` above stays
- * derived from the raw `DISCIPLINES` and keeps its narrow union of ids.
- * Precision where it protects the data, ergonomics where it only has to render.
- */
-export function disciplinesInGroup(group: DisciplineGroup): readonly DisciplineOption[] {
-  return DISCIPLINES.filter((d) => d.group === group);
-}
-
 /** `'hggsp'` → the full human label. Falls back to the id so an unknown value is
  * still visible in the UI rather than rendering as a blank. */
 export function disciplineLabel(id: Discipline): string {
@@ -125,10 +110,12 @@ export function disciplineLabel(id: Discipline): string {
  * instead of an expression buried in a template.
  */
 export function searchDisciplines(query: string): readonly DisciplineOption[] {
-  // Widened to `DisciplineOption[]` for the same reason `disciplinesInGroup` is:
-  // `as const` gives each entry its own exact type, so `note` is absent from the
-  // union rather than optional in it, and `d.note` will not compile off the raw
-  // `DISCIPLINES`.
+  // `as const` on DISCIPLINES gives every entry its own exact literal type, so an
+  // entry without a `note` genuinely lacks the property and the union has no
+  // common `note` to read — `d.note` will not compile off the raw array. Widening
+  // to `DisciplineOption[]` restores the uniform `note?: string` shape, while
+  // `Discipline` stays derived from the raw array and keeps its narrow union of
+  // ids. Precision where it protects the data, ergonomics where it only reads.
   const all: readonly DisciplineOption[] = DISCIPLINES;
   const needle = normalizeText(query.trim());
 
