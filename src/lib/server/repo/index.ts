@@ -1,11 +1,12 @@
 import { env } from '$env/dynamic/private';
 import { createMemoryMissedHourRepo } from './memory';
 import { createPostgresMissedHourRepo } from './postgres';
+import { createDuckDbMissedHourRepo } from './duckdb';
 import type { MissedHourRepo } from './types';
 
 export type { MissedHourRepo } from './types';
 
-const BACKENDS = ['postgres', 'memory'] as const;
+const BACKENDS = ['postgres', 'duckdb', 'memory'] as const;
 type Backend = (typeof BACKENDS)[number];
 
 function resolveBackend(): Backend {
@@ -42,6 +43,20 @@ async function createRepo(): Promise<MissedHourRepo> {
       // memory mode — which is exactly the mode you want when you have no database.
       // Deferring the import keeps the two backends genuinely independent.
       return createPostgresMissedHourRepo((await import('$lib/server/db')).db);
+
+    case 'duckdb': {
+      // Same deferral, same reason: only this backend should require `DUCKDB_PATH`,
+      // and only this backend should load the native driver. (`./duckdb` itself is
+      // safe to import statically — its reference to `@duckdb/node-api` is
+      // `import type`, which erases at compile time.)
+      //
+      // The extra `await` over the Postgres case is DuckDB opening the file, or
+      // negotiating the MotherDuck session, up front — so a bad path fails at boot
+      // rather than on someone's first page view.
+      const { openDuckDb } = await import('$lib/server/db/duckdb');
+
+      return createDuckDbMissedHourRepo(await openDuckDb());
+    }
   }
 }
 
