@@ -30,3 +30,19 @@ export const dateToStr = (date_: CalendarDate | undefined) =>
  * time zone, needs no conversion to get there.
  */
 export const dateToISO = (date_: CalendarDate | undefined) => date_?.toString() ?? '';
+
+/**
+ * Lowercase and strip diacritics, so « Vitré » and « VITRE » are the same needle —
+ * and so a French search box doesn't demand that people type their accents.
+ *
+ * NFD splits « é » into `e` + a combining accent; the regex then drops the accent
+ * and keeps the letter. Every search in the app normalises *both* sides with this
+ * one function, which is the only way the school list and the discipline list can
+ * be guaranteed to agree on what "matches" means.
+ */
+export function normalizeText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}

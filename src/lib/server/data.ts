@@ -1,4 +1,5 @@
 import type { School } from '$lib/types/school';
+import { normalizeText } from '$lib/utils';
 import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre-sample100.csv?raw';
 
 let cachedSchools: School[] | null = null;
@@ -58,29 +59,22 @@ export function getSchools(): School[] {
 export function getSchoolsInfo(school_ids: string[]): Map<string, School> {
   const wanted = new Set(school_ids);
 
-  return new Map(getSchools().filter((s) => wanted.has(s.id)).map((s) => [s.id, s]));
-}
-
-/**
- * Lowercase and strip diacritics so "Vitré" and "VITRE" are the same needle.
- * NFD splits "é" into "e" + combining accent; the regex then drops the accent.
- */
-function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
+  return new Map(
+    getSchools()
+      .filter((s) => wanted.has(s.id))
+      .map((s) => [s.id, s])
+  );
 }
 
 /** Schools whose name or postal code contains `query_string` (case/accent-insensitive). */
 export function getSchoolsFilterName(query_string: string): School[] {
-  const needle = normalize(query_string.trim());
+  const needle = normalizeText(query_string.trim());
 
   if (needle === '') {
     return getSchools();
   }
 
   return getSchools().filter(
-    (sc) => normalize(sc.name).includes(needle) || sc.postalCode.includes(needle)
+    (sc) => normalizeText(sc.name).includes(needle) || sc.postalCode.includes(needle)
   );
 }

@@ -18,6 +18,8 @@
  * `Discipline` below resolves to the actual union of ids rather than `string`.
  * A plain `: readonly DisciplineOption[]` would widen it and lose the safety.
  */
+import { normalizeText } from '$lib/utils';
+
 export const DISCIPLINE_GROUPS = ['commun', 'lang', 'specialite'] as const;
 
 export type DisciplineGroup = (typeof DISCIPLINE_GROUPS)[number];
@@ -102,6 +104,37 @@ export function disciplinesInGroup(group: DisciplineGroup): readonly DisciplineO
  * still visible in the UI rather than rendering as a blank. */
 export function disciplineLabel(id: Discipline): string {
   return DISCIPLINES.find((d) => d.id === id)?.label ?? id;
+}
+
+/**
+ * Disciplines matching a free-text query, in declaration order.
+ *
+ * Two rules, each earning its place:
+ * - **Accent- and case-insensitive**, via the same `normalizeText` the school
+ *   search uses. Typing "francais" has to find « Français »; a French search box
+ *   that demands accents is one people give up on.
+ * - **`note` is searched alongside `label`.** No entry carries a note today, but
+ *   the field exists for options that bundle several real subjects — give *Arts*
+ *   a note of "musique, théâtre, cirque" and those words become findable without
+ *   splitting it into separate entries.
+ *
+ * An empty query returns everything: the list is local, so there is no round trip
+ * to protect and the dropdown should open showing the full menu, then narrow.
+ *
+ * Lives here rather than in the component so the rules are one testable function
+ * instead of an expression buried in a template.
+ */
+export function searchDisciplines(query: string): readonly DisciplineOption[] {
+  // Widened to `DisciplineOption[]` for the same reason `disciplinesInGroup` is:
+  // `as const` gives each entry its own exact type, so `note` is absent from the
+  // union rather than optional in it, and `d.note` will not compile off the raw
+  // `DISCIPLINES`.
+  const all: readonly DisciplineOption[] = DISCIPLINES;
+  const needle = normalizeText(query.trim());
+
+  if (needle === '') return all;
+
+  return all.filter((d) => normalizeText(`${d.label} ${d.note ?? ''}`).includes(needle));
 }
 
 /** Same role as `isClassGroup`: the guard used on both edges — untrusted POST

@@ -1,13 +1,15 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select/index.js';
   import { Label } from '$lib/components/ui/label';
+  import Input from '../ui/input/input.svelte';
   import {
     DISCIPLINE_GROUPS,
     DISCIPLINE_GROUP_LABELS,
     disciplineLabel,
-    disciplinesInGroup,
+    searchDisciplines,
     type Discipline,
   } from '$lib/disciplines';
+  import { createSelectSearchFocus } from './searchableSelect';
 
   interface Props {
     selectedDiscipline?: Discipline;
@@ -15,39 +17,81 @@
 
   let { selectedDiscipline = $bindable() }: Props = $props();
 
+  let open = $state(false);
+  let typedText = $state('');
+
+  /**
+   * Filtering is a plain `$derived`, with none of the debounce/abort machinery
+   * `SelectorSchool` needs. The difference is that the 23 disciplines are already
+   * in memory: there is no round trip to throttle and no slow response that could
+   * land on top of a newer one, so the list can simply be recomputed on every
+   * keystroke. Debouncing a synchronous filter would only add latency.
+   */
+  const matches = $derived(searchDisciplines(typedText));
+
+  /**
+   * Grouped for display, with empty groups dropped — so searching "maths" shows
+   * only « Enseignements de spécialité » rather than a stray heading with nothing
+   * under it.
+   */
+  const groups = $derived(
+    DISCIPLINE_GROUPS.map((group) => ({
+      group,
+      items: matches.filter((d) => d.group === group),
+    })).filter(({ items }) => items.length > 0)
+  );
+
+  /**
+   * Read from `selectedDiscipline` rather than from `matches`. The visible list is
+   * whatever the current query returns, so looking the label up there would blank
+   * out the user's own selection the moment they typed a new search — the same
+   * trap `SelectorSchool` documents, avoided here because the full mapping is
+   * always available to look up against.
+   */
   const triggerContent = $derived(
     selectedDiscipline ? disciplineLabel(selectedDiscipline) : 'Sélectionner une discipline'
   );
+
+  const search = createSelectSearchFocus(() => open);
+
+  function onOpenChange(isOpen: boolean) {
+    // Start each visit to the dropdown from a clean search.
+    if (!isOpen) typedText = '';
+  }
 </script>
 
-<!--
-  A `<Select>` here, not the segmented control used for the group: 23 options with
-  labels as long as « Histoire-géographie, géopolitique et sciences politiques »
-  have no chance of fitting on screen at once. That is the line between the two
-  patterns in this form — ToggleGroup while every option is visible, Select once
-  scrolling is unavoidable.
-
-  `Select.Group` mirrors the curriculum's own split between the common core and the
-  thirteen specialities. That is worth the markup: it turns one 23-item wall into
-  two short, scannable lists, and bits-ui exposes it as a labelled group so screen
-  readers announce the section too.
--->
-<Select.Root type="single" bind:value={selectedDiscipline}>
+<Select.Root type="single" bind:value={selectedDiscipline} bind:open {onOpenChange}>
   <Label for="sel-discipline" class="px-1">
     Discipline <span class="text-muted-foreground font-normal">(optionnel)</span>
   </Label>
-  <Select.Trigger class="bg-mybeige-bg w-full" id="sel-discipline">
+  <Select.Trigger
+    class="bg-mybeige-bg w-full overflow-hidden"
+    onfocus={search.onTriggerFocus}
+    id="sel-discipline"
+  >
     <span class="truncate">{triggerContent}</span>
   </Select.Trigger>
-  <Select.Content>
-    {#each DISCIPLINE_GROUPS as group (group)}
+  <Select.Content class="max-h-72">
+    <Input
+      bind:value={typedText}
+      class="my-1"
+      placeholder="Rechercher une discipline"
+      {@attach search.field}
+    />
+    <!--
+      The groups mirror the curriculum's own split between the common core and the
+      thirteen specialities, which turns one 23-item wall into two scannable lists.
+      They survive filtering rather than collapsing into a flat result list, so the
+      shape of the menu stays recognisable as you narrow it.
+    -->
+    {#each groups as { group, items } (group)}
       <Select.Group>
         <Select.Label>{DISCIPLINE_GROUP_LABELS[group]}</Select.Label>
-        {#each disciplinesInGroup(group) as discipline (discipline.id)}
+        {#each items as discipline (discipline.id)}
           <!--
-            `label` (not just the slot content) is what bits-ui reads back for the
-            typeahead and the selected-value text, so it has to be the plain label —
-            the note below is decoration and must stay out of it.
+            `label` is what bits-ui reads back for its own value handling, so it has
+            to stay the plain label — the note below is decoration and must not
+            leak into it.
           -->
           <Select.Item value={discipline.id} label={discipline.label}>
             <span class="flex flex-col items-start">
@@ -59,6 +103,8 @@
           </Select.Item>
         {/each}
       </Select.Group>
+    {:else}
+      <p class="text-muted-foreground px-2 py-3 text-sm">Aucune discipline trouvée</p>
     {/each}
   </Select.Content>
 </Select.Root>
