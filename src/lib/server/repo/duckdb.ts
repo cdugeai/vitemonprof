@@ -1,5 +1,6 @@
 import type { DuckDBConnection } from '@duckdb/node-api';
 import { isClassGroup } from '$lib/classGroups';
+import { isDiscipline } from '$lib/disciplines';
 import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
 import { STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
 
@@ -27,9 +28,19 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
     async add(mh) {
       await connection.run(
         `insert into missed_hour
-           ("uuid", "school_id", "class", "class_group", "date", "nb_hours", "created_at")
-         values ($1, $2, $3, $4, $5, $6, $7)`,
-        [mh.uuid, mh.schoolId, mh.class, mh.classGroup, mh.date_, mh.nbHours, mh.createdAt]
+           ("uuid", "school_id", "class", "class_group", "discipline",
+            "date", "nb_hours", "created_at")
+         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          mh.uuid,
+          mh.schoolId,
+          mh.class,
+          mh.classGroup,
+          mh.discipline,
+          mh.date_,
+          mh.nbHours,
+          mh.createdAt,
+        ]
       );
     },
 
@@ -54,6 +65,7 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
            "school_id"         as school_id,
            "class"             as class,
            "class_group"       as class_group,
+           "discipline"        as discipline,
            "date"::text        as date,
            "nb_hours"          as nb_hours,
            epoch_ms("created_at") as created_at_ms
@@ -68,6 +80,7 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
             schoolId: String(r.school_id),
             class: String(r.class),
             classGroup: isClassGroup(r.class_group) ? r.class_group : null,
+            discipline: isDiscipline(r.discipline) ? r.discipline : null,
             date_: String(r.date),
             nbHours: Number(r.nb_hours),
             createdAt: new Date(Number(r.created_at_ms)).toISOString(),

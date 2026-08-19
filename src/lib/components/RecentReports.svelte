@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
   import type { MissedHour } from '$lib/types/missedHours';
+  import { disciplineLabel } from '$lib/disciplines';
   import type { School } from '$lib/types/school';
 
   interface Props {
@@ -84,7 +85,11 @@
           <div class="flex gap-2">
             <p>{Math.trunc(diffMinutes(mh.createdAt))} min -</p>
             <p>{school_info?.name} ({school_info?.postalCode}) -</p>
-            <p>{mh.nbHours} heure(s) dans {classLabel(mh)}</p>
+            <p>
+              {mh.nbHours} heure(s) dans {classLabel(mh)}{mh.discipline
+                ? ` — ${disciplineLabel(mh.discipline)}`
+                : ''}
+            </p>
           </div>
         {/each}
       {/if}

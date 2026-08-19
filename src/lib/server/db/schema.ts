@@ -30,6 +30,8 @@ export const missedHour = pgTable(
     class: text('class').notNull(),
     // Nullable: the group is optional in the form
     classGroup: text('class_group'),
+    // Stores the stable id from `$lib/disciplines`, not the display label.
+    discipline: text('discipline'),
     date_: date('date').notNull(),
     nbHours: integer('nb_hours').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
