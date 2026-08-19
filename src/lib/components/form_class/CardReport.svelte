@@ -12,11 +12,13 @@
   import * as Tabs from '$lib/components/ui/tabs/index.js';
 
   import SelectorClass from './SelectorClass.svelte';
+  import SelectorClassGroup from './SelectorClassGroup.svelte';
   import SelectorDepartement from './SelectorDepartement.svelte';
   import SelectorSchool from './SelectorSchool.svelte';
   import DatePicker from '../DatePicker.svelte';
   import PresenterSchool from './PresenterSchool.svelte';
   import type { School } from '$lib/types/school';
+  import type { ClassGroup } from '$lib/classGroups';
   import FormHint from './FormHint.svelte';
   import { dateToStr } from '$lib/utils';
   import NumberHoursInput from './NumberHoursInput.svelte';
@@ -24,6 +26,7 @@
   interface Props {
     selectedDept?: string;
     selectedClass?: string;
+    selectedClassGroup?: ClassGroup;
     selectedSchool?: School;
     selectedDate?: CalendarDate;
     nbHours?: number;
@@ -34,6 +37,7 @@
   let {
     selectedDept = $bindable(),
     selectedClass = $bindable(),
+    selectedClassGroup = $bindable(),
     selectedSchool = $bindable(),
     selectedDate = $bindable(),
     nbHours = $bindable(),
@@ -118,6 +122,7 @@
         </Tabs.Content>
         <div class="flex flex-col gap-2">
           <SelectorClass bind:selectedClass />
+          <SelectorClassGroup bind:selectedClassGroup />
           <DatePicker bind:date_={selectedDate} />
           <NumberHoursInput bind:nbHours />
         </div>

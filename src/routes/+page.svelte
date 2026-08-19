@@ -12,8 +12,10 @@
   import CircleCheck from '@lucide/svelte/icons/circle-check';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import { page } from '$app/state';
+  import type { ClassGroup } from '$lib/classGroups';
 
   let selectedClass: string | undefined = $state();
+  let selectedClassGroup: ClassGroup | undefined = $state();
   let selectedSchool: School | undefined = $state();
   let selectedDate: CalendarDate | undefined = $state();
   let selectedDept: string | undefined = $state();
@@ -93,6 +95,7 @@
       <CardReport
         bind:selectedDept
         bind:selectedClass
+        bind:selectedClassGroup
         bind:selectedSchool
         bind:selectedDate
         bind:nbHours
@@ -126,6 +129,7 @@
       <input type="hidden" name="nbHours" value={nbHours} />
       <input type="hidden" name="dept" value={selectedDept} />
       <input type="hidden" name="class" value={selectedClass} />
+      <input type="hidden" name="classGroup" value={selectedClassGroup ?? ''} />
       <input type="hidden" name="schoolId" value={selectedSchool?.id} />
       <input type="hidden" name="school_name" value={selectedSchool?.name} />
       <input type="hidden" name="date" value={dateToISO(selectedDate)} />
