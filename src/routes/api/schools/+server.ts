@@ -1,6 +1,5 @@
 import { error, json } from '@sveltejs/kit';
-import { getSchools, getSchoolsFilterName } from '$lib/server/data';
-import { getSchoolsInfo } from '$lib/server/db_tmp';
+import { getSchools, getSchoolsFilterName, getSchoolsInfo } from '$lib/server/data';
 import type { RequestHandler } from './$types';
 
 /** Upper bound on `?id=` filters, so a crafted URL can't force an oversized response. */
@@ -28,7 +27,7 @@ export const GET: RequestHandler = async ({ url }) => {
       error(400, `Too many ids: ${ids.length} (max ${MAX_IDS})`);
     }
 
-    const schools = await getSchoolsInfo(ids);
+    const schools = getSchoolsInfo(ids);
 
     // A Map has no JSON representation — send an array and let the caller re-index it.
     return json([...schools.values()]);

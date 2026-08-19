@@ -7,7 +7,7 @@
   import { enhance } from '$app/forms';
   import CardReport from '$lib/components/form_class/CardReport.svelte';
   import { CalendarDate } from '@internationalized/date';
-  import { dateToStr } from '$lib/utils';
+  import { dateToISO, dateToStr } from '$lib/utils';
   import * as Alert from '$lib/components/ui/alert';
   import CircleCheck from '@lucide/svelte/icons/circle-check';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -128,7 +128,7 @@
       <input type="hidden" name="class" value={selectedClass} />
       <input type="hidden" name="schoolId" value={selectedSchool?.id} />
       <input type="hidden" name="school_name" value={selectedSchool?.name} />
-      <input type="hidden" name="date" value={dateToStr(selectedDate)} />
+      <input type="hidden" name="date" value={dateToISO(selectedDate)} />
     </form>
 
     <!-- Statistics Preview Section (Right) -->
