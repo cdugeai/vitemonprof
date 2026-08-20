@@ -16,9 +16,9 @@ import {
  * file or at MotherDuck.
  *
  * Shares every statement with the Postgres backend via `./sql/missedHourQueries`.
- * That works because Knex's `pg` dialect emits double-quoted identifiers and `$1`
- * placeholders, both of which DuckDB accepts unchanged — so "no DuckDB dialect in
- * Knex" turns out not to matter.
+ * That works because Kysely's Postgres dialect emits double-quoted identifiers and
+ * `$1` placeholders, both of which DuckDB accepts unchanged — so "no DuckDB
+ * dialect in Kysely" turns out not to matter.
  *
  * What stays local is the row marshalling, and here it earns its place: DuckDB
  * hands back `DuckDBUUIDValue` / `DuckDBTimestampTZValue` wrappers rather than JS
@@ -31,9 +31,9 @@ import {
  * local development and a single node; MotherDuck is the answer beyond that.
  */
 export function createDuckDbMissedHourRepo(connection: DuckDBConnection): MissedHourRepo {
-  // DuckDB's driver wants a mutable array, while `SqlQuery` keeps its bindings
-  // readonly so no caller can mutate a query after it is built.
-  const bind = (q: SqlQuery) => [...q.bindings] as DuckDBValue[];
+  // DuckDB's driver wants a mutable array, while `SqlQuery` keeps its parameters
+  // readonly so no caller can mutate a compiled query after it is built.
+  const bind = (q: SqlQuery) => [...q.parameters] as DuckDBValue[];
 
   return {
     async add(mh) {
