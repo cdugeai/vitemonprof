@@ -56,3 +56,62 @@ Styling is **Tailwind CSS v4** (via `@tailwindcss/vite`) plus **shadcn-svelte** 
 ## Maplibre GL
 
 Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.
+
+## Migrations
+
+Schema changes are versioned Kysely migrations in `migrations/`, applied by a
+plain Node script (`scripts/migrate.ts`). `drizzle-kit push` is gone — it diffed
+`schema.ts` against the live database and generated DDL on the fly; these are
+explicit, ordered, and reversible.
+
+- `npm run db:migrate` — apply everything pending
+- `npm run db:migrate:status` — show applied vs pending
+- `npm run db:migrate:down` — roll back one migration
+
+To add one: create `migrations/00N_what_it_does.ts` exporting `up` and `down`,
+then mirror the change in `src/lib/server/db/schema.ts` — that file is now a
+_description_ used by better-auth's Drizzle adapter and by the query layer's
+column-name check, and editing it alone changes no database.
+
+No ts-node and no dotenv package: Node 24 strips the types and reads `.env` via
+`--env-file`. The only added dependency is `kysely-postgres-js`, Kysely's dialect
+for the `postgres` driver the app already uses.
+
+**`drizzle-orm` stays** — better-auth talks to the database through
+`drizzleAdapter`. Only the migration tool changed.
+
+## Which database am I talking to?
+
+There are **two** Postgres databases and they are easy to confuse:
+
+| env var               | target                            | role                                           |
+| --------------------- | --------------------------------- | ---------------------------------------------- |
+| `DATABASE_URL_NEON`   | Neon, `dev`                       | the shared/hosted database — **has real data** |
+| `DATABASE_URL_DOCKER` | `localhost:5432`, `local`         | the `compose.yaml` container — disposable      |
+| `DATABASE_URL`        | whichever of the two is copied in | what the app and `db:migrate` actually use     |
+
+`DATABASE_URL` is the one the app reads, and it has pointed at **Neon** by default.
+Do not assume it means localhost because Docker happens to be running — the
+container can be up and completely unused.
+
+**Before running anything against a database, print the host and say which one it
+is.** For one-off scripts, pass the target explicitly rather than relying on
+whatever `DATABASE_URL` currently holds:
+
+```bash
+node --env-file=.env -e "import('postgres').then(async ({default:pg}) => { const sql = pg(process.env.DATABASE_URL_DOCKER); /* ... */ })"
+```
+
+For anything destructive — `drop`, `truncate`, `delete`, or a migration `down` —
+assert the target first and refuse if it does not match:
+
+```js
+const u = new URL(url);
+if (!u.hostname.endsWith('neon.tech')) {
+  console.error('wrong target', u.hostname);
+  process.exit(1);
+}
+```
+
+Never print the connection string itself; it contains the password. Print
+`u.hostname` and the database name only.
