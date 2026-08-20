@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DuckDBInstance } from '@duckdb/node-api';
-import { SCHEMA_DDL } from '$lib/server/db/duckdbSchema';
+import { migrateDuckDb } from '$lib/server/db/duckdbMigrate';
 import type { MissedHour } from '$lib/types/missedHours';
 import { createMemoryMissedHourRepo } from './memory';
 import { createDuckDbMissedHourRepo } from './duckdb';
@@ -31,10 +31,11 @@ const BACKENDS: { name: string; create: () => Promise<MissedHourRepo> }[] = [
   {
     name: 'duckdb',
     create: async () => {
-      // `:memory:` — a real DuckDB engine running the real `SCHEMA_DDL`, but with
-      // no file to create, lock, or clean up. Each test gets a fresh database.
+      // `:memory:` — a real DuckDB engine, brought up by the real `migrations/`,
+      // with no file to create, lock, or clean up. Each test gets a fresh
+      // database, and the migrations are exercised on every run.
       const connection = await (await DuckDBInstance.create(':memory:')).connect();
-      await connection.run(SCHEMA_DDL);
+      await migrateDuckDb(connection);
       return createDuckDbMissedHourRepo(connection);
     },
   },

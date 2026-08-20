@@ -5,6 +5,8 @@ import { Kysely } from 'kysely';
 import { FileMigrationProvider, Migrator, NO_MIGRATIONS } from 'kysely/migration';
 import { PostgresJSDialect } from 'kysely-postgres-js';
 import postgres from 'postgres';
+import { DuckDBInstance } from '@duckdb/node-api';
+import { duckDbDialect } from '../src/lib/server/db/duckdbDialect.ts';
 
 /**
  * Applies the migrations in `migrations/` to Postgres.
@@ -24,26 +26,44 @@ import postgres from 'postgres';
  * Run with `npm run db:migrate`. No ts-node or dotenv package involved: Node 24
  * strips the types itself and reads `.env` with `--env-file`.
  */
-const DATABASE_URL = process.env.DATABASE_URL;
+/**
+ * `--duckdb` runs the *same* migration files against DuckDB.
+ *
+ * That is the whole reason `duckdbDialect.ts` exists: DuckDB accepts the SQL
+ * Kysely's Postgres compiler emits, so once it has a driver there is no reason
+ * for it to carry a separate hand-written schema.
+ */
+const useDuckDb = process.argv.includes('--duckdb');
+const DATABASE_URL = useDuckDb ? process.env.DUCKDB_PATH : process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error('DATABASE_URL is not set');
+  console.error(useDuckDb ? 'DUCKDB_PATH is not set' : 'DATABASE_URL is not set');
   process.exit(1);
 }
 
-// `max: 1` because migrations must run on a single connection: Kysely takes an
-// advisory lock to stop two deploys migrating at once, and a lock is held by a
-// connection, not by the pool.
-const client = postgres(DATABASE_URL, { max: 1, onnotice: () => {} });
+async function openDatabase(): Promise<Kysely<unknown>> {
+  if (useDuckDb) {
+    const connection = await (await DuckDBInstance.create(DATABASE_URL!)).connect();
+    return new Kysely<unknown>({ dialect: duckDbDialect(connection) });
+  }
 
-const db = new Kysely<unknown>({ dialect: new PostgresJSDialect({ postgres: client }) });
+  // `max: 1` because migrations must run on a single connection: Kysely takes an
+  // advisory lock to stop two deploys migrating at once, and a lock is held by a
+  // connection, not by the pool.
+  const client = postgres(DATABASE_URL!, { max: 1, onnotice: () => {} });
+  return new Kysely<unknown>({ dialect: new PostgresJSDialect({ postgres: client }) });
+}
+
+const db = await openDatabase();
+
+console.log(useDuckDb ? `duckdb: ${DATABASE_URL}` : `postgres: ${new URL(DATABASE_URL).hostname}`);
 
 const migrator = new Migrator({
   db,
   provider: new FileMigrationProvider({ fs, path, migrationFolder: path.resolve('migrations') }),
 });
 
-const command = process.argv[2] ?? 'up';
+const command = process.argv.filter((a) => !a.startsWith('--'))[2] ?? 'up';
 
 async function run() {
   switch (command) {

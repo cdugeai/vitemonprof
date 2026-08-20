@@ -1,6 +1,6 @@
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import { env } from '$env/dynamic/private';
-import { SCHEMA_DDL } from './duckdbSchema';
+import { migrateDuckDb } from './duckdbMigrate';
 
 /**
  * Opened once and shared. `DuckDBInstance.create` is genuinely async (it may be
@@ -30,12 +30,14 @@ async function connect(): Promise<DuckDBConnection> {
   const instance = await DuckDBInstance.create(path);
   const connection = await instance.connect();
 
-  await connection.run(SCHEMA_DDL);
+  // The same `migrations/` files Postgres uses — DuckDB is no longer a special
+  // case with its own hand-maintained DDL.
+  await migrateDuckDb(connection);
 
-  // Belt and braces with the missing \`default now()\` above: a checkpoint flushes
-  // the WAL into the database file, so there is no ALTER entry left to replay on
-  // the next open. Cheap at this size, and it means a schema change can never
-  // leave a database that refuses to reopen.
+  // A checkpoint flushes the WAL into the database file, so no schema change is
+  // left to replay on the next open. DuckDB 1.5.5 fails an internal assertion
+  // replaying an `alter table` when the table carries a `default now()`, and a
+  // file that will not reopen is a bad way to discover that.
   await connection.run('checkpoint');
 
   return connection;
