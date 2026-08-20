@@ -3,6 +3,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import type { MissedHour } from '$lib/types/missedHours';
   import { disciplineLabel } from '$lib/disciplines';
+  import { classLevelLabel } from '$lib/classLevels';
   import type { School } from '$lib/types/school';
   import { formatRelativeTime } from '$lib/utils';
   import Inbox from '@lucide/svelte/icons/inbox';
@@ -83,10 +84,15 @@
     return () => clearInterval(timer);
   });
 
-  // « 6e A » when a group was given, plain « 6e » when it was not — the group is
-  // optional, so the label has to read naturally either way.
-  const classLabel = (mh: MissedHour) =>
-    mh.classGroup ? `${mh.class} ${mh.classGroup}` : mh.class;
+  // « 1ère C » when a group was given, plain « 1ère » when it was not — the group
+  // is optional, so the label has to read naturally either way.
+  //
+  // `classLevelLabel` is what was missing: `mh.class` holds the stored id, so this
+  // list used to render « 1ere » and « term » at people.
+  const classLabel = (mh: MissedHour) => {
+    const level = classLevelLabel(mh.class);
+    return mh.classGroup ? `${level} ${mh.classGroup}` : level;
+  };
 
   /**
    * Colour encodes *severity*, and severity only.

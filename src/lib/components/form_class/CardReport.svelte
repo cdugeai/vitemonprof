@@ -21,13 +21,14 @@
   import type { School } from '$lib/types/school';
   import type { ClassGroup } from '$lib/classGroups';
   import type { Discipline } from '$lib/disciplines';
+  import type { ClassLevel } from '$lib/classLevels';
   import FormHint from './FormHint.svelte';
   import { dateToStr } from '$lib/utils';
   import NumberHoursInput from './NumberHoursInput.svelte';
 
   interface Props {
     selectedDept?: string;
-    selectedClass?: string;
+    selectedClass?: ClassLevel;
     selectedClassGroup?: ClassGroup;
     selectedDiscipline?: Discipline;
     selectedSchool?: School;

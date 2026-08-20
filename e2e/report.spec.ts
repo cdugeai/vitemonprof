@@ -77,11 +77,7 @@ test('a parent can report a missed class and see it appear in the recent list', 
   // not from client state left over after the submit.
   const report = page.getByRole('listitem').filter({ hasText: 'Georges Brassens' });
   await expect(report).toBeVisible();
-  // `1ere`, not `1ère`: the list renders the stored class id verbatim. The
-  // discipline next to it goes through `disciplineLabel()`, the class does not —
-  // there is no shared class mapping to look it up in. Asserted as-is so the test
-  // describes what the app actually does; change this line when that is fixed.
-  await expect(report).toContainText('1ere C');
+  await expect(report).toContainText('1ère C');
   await expect(report).toContainText('Mathématiques');
   await expect(report).toContainText('3h');
 });

@@ -13,9 +13,10 @@
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import { page } from '$app/state';
   import type { ClassGroup } from '$lib/classGroups';
+  import type { ClassLevel } from '$lib/classLevels';
   import type { Discipline } from '$lib/disciplines';
 
-  let selectedClass: string | undefined = $state();
+  let selectedClass: ClassLevel | undefined = $state();
   let selectedClassGroup: ClassGroup | undefined = $state();
   let selectedDiscipline: Discipline | undefined = $state();
   let selectedSchool: School | undefined = $state();
