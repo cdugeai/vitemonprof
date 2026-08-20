@@ -49,7 +49,7 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
         const discipline = r[LIST_ALIAS.discipline];
 
         return {
-          uuid: String(r[LIST_ALIAS.uuid]),
+          id: Number(r[LIST_ALIAS.id]),
           schoolId: String(r[LIST_ALIAS.schoolId]),
           class: String(r[LIST_ALIAS.class]),
           // Validated, not cast: these are plain `text` columns, so the database

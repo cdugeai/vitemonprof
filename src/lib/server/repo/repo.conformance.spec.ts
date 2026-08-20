@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DuckDBInstance } from '@duckdb/node-api';
 import { migrateDuckDb } from '$lib/server/db/duckdbMigrate';
-import type { MissedHour } from '$lib/types/missedHours';
+import type { NewMissedHour } from '$lib/types/missedHours';
 import { createMemoryMissedHourRepo } from './memory';
 import { createDuckDbMissedHourRepo } from './duckdb';
 import { STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
@@ -45,12 +45,8 @@ const BACKENDS: { name: string; create: () => Promise<MissedHourRepo> }[] = [
 const NOW = Date.parse('2026-08-20T12:00:00.000Z');
 const daysAgo = (n: number) => new Date(NOW - n * 24 * 60 * 60 * 1000).toISOString();
 
-let uuidCounter = 0;
-function report(overrides: Partial<MissedHour> = {}): MissedHour {
-  uuidCounter += 1;
-
+function report(overrides: Partial<NewMissedHour> = {}): NewMissedHour {
   return {
-    uuid: `00000000-0000-4000-8000-${String(uuidCounter).padStart(12, '0')}`,
     schoolId: '0761322Z',
     class: '1ere',
     classGroup: 'C',
@@ -77,13 +73,34 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
     });
   });
 
-  it('round-trips a report unchanged', async () => {
+  it('round-trips a report unchanged, plus the id the store assigned', async () => {
     const repo = await create();
     const stored = report();
 
     await repo.add(stored);
 
-    expect(await repo.list()).toEqual([stored]);
+    // `expect.any(Number)` on the id, exact equality on everything else: which
+    // number a backend hands out is its own business (Postgres and DuckDB share
+    // a sequence definition, the memory repo counts), but *that* it hands out a
+    // number, and that no other field is touched in transit, is the contract.
+    expect(await repo.list()).toEqual([{ ...stored, id: expect.any(Number) }]);
+  });
+
+  it('assigns ids itself rather than taking one from the caller', async () => {
+    const repo = await create();
+
+    await repo.add(report({ createdAt: daysAgo(2) }));
+    await repo.add(report({ createdAt: daysAgo(1) }));
+
+    // Distinct, integral, and increasing with insertion order — the three
+    // properties anything using the id as a key or a cursor relies on. Note the
+    // list is newest-first, so the ids come back descending.
+    const ids = (await repo.list()).map((r) => r.id);
+
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    expect(ids.every(Number.isInteger)).toBe(true);
+    expect(ids[0]).toBeGreaterThan(ids[1]);
   });
 
   it('keeps the optional fields as null rather than inventing a value', async () => {

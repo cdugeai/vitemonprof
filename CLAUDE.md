@@ -77,9 +77,16 @@ To add one:
 3. `npm run db:types`
 4. wire the column through: domain type → `repo/sql/` → both repos → action → UI.
    The compiler names every site once step 3 has run.
-5. **DuckDB has no migrations.** Kysely has no DuckDB dialect, so that backend
-   carries its own DDL in `db/duckdbSchema.ts` and needs the column added _twice_:
-   in `create table` (new files) and as `add column if not exists` (existing ones).
+5. **The same files run against DuckDB**, via `duckdbDialect.ts` — applied on
+   connect by `duckdbMigrate.ts`, and on demand by `npm run db:migrate:duckdb`.
+   There is no second hand-maintained DDL any more. The cost is that a migration
+   has to be written in the SQL subset _both_ engines implement: DuckDB has no
+   `serial` and no `generated as identity` (use an explicit sequence plus
+   `defaultTo(sql\`nextval(…)\`)`), and its `alter table` supports neither
+   `drop constraint` nor `add constraint` — so a change to a primary key means
+   rebuilding the table and renaming it into place, as `003` does. The DuckDB
+   row of `repo.conformance.spec.ts` replays every migration into `:memory:` on
+   each test run, so a statement DuckDB rejects fails `npm run test:unit`.
 
 ### There is no migration generator
 

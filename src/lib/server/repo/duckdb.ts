@@ -21,7 +21,7 @@ import {
  * dialect in Kysely" turns out not to matter.
  *
  * What stays local is the row marshalling, and here it earns its place: DuckDB
- * hands back `DuckDBUUIDValue` / `DuckDBTimestampTZValue` wrappers rather than JS
+ * hands back `DuckDBDateValue` / `DuckDBTimestampTZValue` wrappers rather than JS
  * natives, and the repo contract is that no engine type reaches the domain.
  *
  * Worth knowing before choosing this backend: DuckDB is a columnar OLAP engine.
@@ -53,7 +53,7 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
         const discipline = r[LIST_ALIAS.discipline];
 
         return {
-          uuid: String(r[LIST_ALIAS.uuid]),
+          id: Number(r[LIST_ALIAS.id]),
           schoolId: String(r[LIST_ALIAS.schoolId]),
           class: String(r[LIST_ALIAS.class]),
           classGroup: isClassGroup(classGroup) ? classGroup : null,
