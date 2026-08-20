@@ -25,3 +25,7 @@ vite.config.ts.timestamp-*
 # Local DuckDB database files (the CSVs in data/ stay tracked)
 *.duckdb
 *.duckdb.wal
+
+# Playwright
+test-results/
+playwright-report/

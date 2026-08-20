@@ -14,7 +14,24 @@ The author is learning SvelteKit. Prioritize **production-quality, idiomatic cod
 - `npm run lint` — Prettier check + ESLint
 - `npm run format` — auto-format with Prettier
 
-No test runner is configured yet. If you add one, wire it into a `test` script and document how to run a single test here.
+### Tests
+
+- `npm test` — everything: Vitest (unit + repo contract) then Playwright (E2E)
+- `npm run test:unit` — Vitest in watch mode; add `-- --run` for a single pass
+- `npm run test:e2e` — Playwright only
+
+Running one test:
+
+- `npm run test:unit -- --run src/lib/disciplines.spec.ts` — one file
+- `npm run test:unit -- --run -t "ignores accents"` — one test by name
+- `npm run test:e2e -- e2e/report.spec.ts` — one E2E file
+- `npm run test:e2e -- --ui` — Playwright's interactive runner
+
+Layout and conventions:
+
+- `src/**/*.spec.ts` — Vitest, node environment (see the `server` project in `vite.config.ts`). `expect.requireAssertions` is on, so every test must assert something.
+- `src/lib/server/repo/repo.conformance.spec.ts` — one contract suite replayed against **every** `MissedHourRepo` implementation via `describe.each`. Add a backend to the `BACKENDS` array and it inherits the whole suite. DuckDB runs in `:memory:` against the real `SCHEMA_DDL`, so no service is needed; Postgres is deliberately excluded because it would make `npm test` depend on Docker.
+- `e2e/` — Playwright. `playwright.config.ts` starts its own dev server on port 4173 with `MISSED_HOUR_REPO=memory`, so E2E never touches a real database regardless of what `.env` says.
 
 ## Architecture
 
