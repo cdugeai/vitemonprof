@@ -20,9 +20,19 @@ describe('insertMissedHour', () => {
     // The point of the assertion: no user-supplied value may appear in the SQL
     // text. If a future edit switches to string concatenation, this fails.
     expect(sql).not.toContain('0761322Z');
-    expect(sql).toMatch(/values \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8\)/);
-    expect(parameters).toHaveLength(8);
     expect(parameters).toContain('0761322Z');
+
+    // Every value is bound, and the placeholders are a complete `$1..$n` run
+    // matching the parameter list.
+    //
+    // Derived from `parameters` rather than hardcoded as `$1..$8`. The property
+    // under test is "each value travels as a binding", which has nothing to say
+    // about how many columns the table has — so adding one should not break this
+    // test. It used to, which meant the assertion was really checking the column
+    // count under a misleading name.
+    const placeholders = [...sql.matchAll(/\$(\d+)/g)].map((m) => Number(m[1]));
+
+    expect(placeholders).toEqual(parameters.map((_, index) => index + 1));
   });
 
   it('passes null through for the optional columns', () => {
