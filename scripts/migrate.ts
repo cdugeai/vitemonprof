@@ -57,6 +57,26 @@ async function run() {
       for (const m of all) {
         console.log(`  ${m.executedAt ? '✓ applied' : '· pending'}  ${m.name}`);
       }
+
+      // `getMigrations()` only reports what the *provider* can see, so a ledger
+      // entry whose file has been deleted does not appear at all — the status
+      // looks clean while `migrateToLatest` refuses to run with "corrupted
+      // migrations". Reading the table directly is what surfaces that, and it is
+      // the common case after a `git revert` that drops a migration file.
+      const executed = await db
+        .withoutPlugins()
+        .selectFrom('kysely_migration')
+        .select('name')
+        .execute()
+        .catch(() => [] as { name: string }[]);
+
+      const known = new Set(all.map((m) => m.name));
+      for (const row of executed) {
+        if (!known.has(row.name)) {
+          console.log(`  ⚠ orphaned  ${row.name}  (in the database, no file on disk)`);
+        }
+      }
+
       return { error: undefined, results: [] };
     }
     default:
