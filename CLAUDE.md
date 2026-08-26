@@ -77,16 +77,35 @@ To add one:
 3. `npm run db:types`
 4. wire the column through: domain type → `repo/sql/` → both repos → action → UI.
    The compiler names every site once step 3 has run.
-5. **The same files run against DuckDB**, via `duckdbDialect.ts` — applied on
-   connect by `duckdbMigrate.ts`, and on demand by `npm run db:migrate:duckdb`.
+5. **The same files run against DuckDB**, via `duckdbDialect.ts` — applied by
+   `npm run db:migrate:duckdb`, whether `DUCKDB_PATH` is a local file or an `md:`
+   URL. There is no second hand-maintained DDL any more.
    There is no second hand-maintained DDL any more. The cost is that a migration
    has to be written in the SQL subset _both_ engines implement: DuckDB has no
    `serial` and no `generated as identity` (use an explicit sequence plus
-   `defaultTo(sql\`nextval(…)\`)`), and its `alter table` supports neither
-   `drop constraint` nor `add constraint` — so a change to a primary key means
-   rebuilding the table and renaming it into place, as `003` does. The DuckDB
-   row of `repo.conformance.spec.ts` replays every migration into `:memory:` on
-   each test run, so a statement DuckDB rejects fails `npm run test:unit`.
+   `defaultTo(sql\`nextval(…)\`)`), and its `alter table`supports neither`drop constraint`nor`add constraint`— so a change to a primary key means
+rebuilding the table and renaming it into place, as`003`does. The DuckDB
+row of`repo.conformance.spec.ts`replays every migration into`:memory:`on
+each test run, so a statement DuckDB rejects fails`npm run test:unit`.
+
+### Nothing migrates itself
+
+**Migrations only ever run when you run them.** Not on connect, not on build, not
+on the first request — for any backend, Postgres or DuckDB, local file or
+MotherDuck. `npm run db:migrate` and `npm run db:migrate:duckdb` are the only
+things that apply a migration, and both are started by a person or a pipeline.
+
+The app used to migrate DuckDB as it opened it, which was fine while DuckDB meant
+a local file: the OS write lock made this process the only possible migrator. It
+stops being fine the moment `DUCKDB_PATH` is an `md:` URL. MotherDuck is a shared
+network database with no such lock, several instances of the app open it at once,
+and Kysely's migration lock is a deliberate no-op in `duckdbDialect.ts` — so every
+instance would apply the same DDL against the same `kysely_migration` ledger. It
+would also just fail on a serverless host: `FileMigrationProvider` reads
+`migrations/` off disk, and a bundle does not contain that directory.
+
+Migrate before the new code serves traffic, then deploy. Forgetting shows up as a
+missing table — the same failure Postgres has always had here.
 
 ### There is no migration generator
 

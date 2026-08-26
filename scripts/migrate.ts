@@ -1,12 +1,13 @@
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import { Kysely } from 'kysely';
+import { Kysely, sql } from 'kysely';
 // Kysely ships the migrator on a subpath, not from the package root.
 import { FileMigrationProvider, Migrator, NO_MIGRATIONS } from 'kysely/migration';
 import { PostgresJSDialect } from 'kysely-postgres-js';
 import postgres from 'postgres';
 import { DuckDBInstance } from '@duckdb/node-api';
 import { duckDbDialect } from '../src/lib/server/db/duckdbDialect.ts';
+import { describeDuckDbTarget, isMotherDuck } from '../src/lib/server/db/duckdbTarget.ts';
 
 /**
  * Applies the migrations in `migrations/` to Postgres.
@@ -56,7 +57,13 @@ async function openDatabase(): Promise<Kysely<unknown>> {
 
 const db = await openDatabase();
 
-console.log(useDuckDb ? `duckdb: ${DATABASE_URL}` : `postgres: ${new URL(DATABASE_URL).hostname}`);
+// Never the raw value on either branch: a Postgres URL carries the password and
+// an `md:` URL may carry the MotherDuck token as a query parameter.
+console.log(
+  useDuckDb
+    ? `duckdb: ${describeDuckDbTarget(DATABASE_URL)}`
+    : `postgres: ${new URL(DATABASE_URL).hostname}`
+);
 
 const migrator = new Migrator({
   db,
@@ -121,5 +128,18 @@ if (error) {
 }
 
 if (command !== 'status' && (results ?? []).length === 0) console.log('  nothing to apply');
+
+// A checkpoint flushes the WAL into the database file, so no schema change is
+// left to replay on the next open. DuckDB 1.5.5 fails an internal assertion
+// replaying an `alter table` when the table carries a `default now()`, and a file
+// that will not reopen is a bad way to discover that. This used to run at app
+// boot, next to the migration it protects; it belongs wherever the migration is,
+// and the migration is here now.
+//
+// Skipped for MotherDuck because there is no local WAL behind a network session
+// to flush — the one thing in this script that looks at *which* DuckDB it is.
+if (useDuckDb && !isMotherDuck(DATABASE_URL) && command !== 'status') {
+  await sql`checkpoint`.execute(db);
+}
 
 await db.destroy();

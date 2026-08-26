@@ -1,12 +1,15 @@
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api';
 import { env } from '$env/dynamic/private';
-import { migrateDuckDb } from './duckdbMigrate';
+import { describeDuckDbTarget } from './duckdbTarget';
 
 /**
  * Opened once and shared. `DuckDBInstance.create` is genuinely async (it may be
  * opening a file or negotiating a MotherDuck session), so unlike `postgres-js`
  * this cannot be a plain module-level export — callers get the promise instead,
  * and `repo/index.ts` awaits it exactly once at boot.
+ *
+ * "Once" is per *process*, which is worth keeping in mind: on a platform that
+ * runs several instances of the app, everything below happens once per instance.
  */
 let connecting: Promise<DuckDBConnection> | undefined;
 
@@ -30,15 +33,20 @@ async function connect(): Promise<DuckDBConnection> {
   const instance = await DuckDBInstance.create(path);
   const connection = await instance.connect();
 
-  // The same `migrations/` files Postgres uses — DuckDB is no longer a special
-  // case with its own hand-maintained DDL.
-  await migrateDuckDb(connection);
+  console.log(`[duckdb] ${describeDuckDbTarget(path)}`);
 
-  // A checkpoint flushes the WAL into the database file, so no schema change is
-  // left to replay on the next open. DuckDB 1.5.5 fails an internal assertion
-  // replaying an `alter table` when the table carries a `default now()`, and a
-  // file that will not reopen is a bad way to discover that.
-  await connection.run('checkpoint');
-
+  // Opening a database is not migrating it. This used to call `migrateDuckDb`,
+  // on the reasoning that a DuckDB file appears out of nowhere and has no
+  // "provision the database" moment to hang a migration on. True of a file, and
+  // false of everything else: `md:` is a shared network database that several
+  // instances of this app open at once, so migrating here means all of them
+  // applying the same DDL against the same `kysely_migration` ledger, with no
+  // lock to serialise them (`duckdbDialect.ts` implements Kysely's as a no-op).
+  //
+  // Rather than branch on which kind of database this is, the app now does what
+  // it already does for Postgres, for every target alike: assume the schema is
+  // there, and let a missing table say so if it is not. Migrating is
+  // `npm run db:migrate:duckdb`, run deliberately by a person or a pipeline —
+  // never as a side effect of serving a request.
   return connection;
 }
