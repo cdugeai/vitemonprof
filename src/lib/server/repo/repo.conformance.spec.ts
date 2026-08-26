@@ -41,8 +41,22 @@ const BACKENDS: { name: string; create: () => Promise<MissedHourRepo> }[] = [
   },
 ];
 
-/** Fixed timestamps so nothing here depends on when the suite runs. */
-const NOW = Date.parse('2026-08-20T12:00:00.000Z');
+/**
+ * Offsets from the real clock, captured once so every row in a run shares an
+ * origin.
+ *
+ * It is tempting to freeze this at a literal instant — an earlier version did,
+ * on the reasoning that a fixed date makes the suite independent of when it
+ * runs. It achieves the opposite. `stats()` counts its rolling window back from
+ * *now*, in both backends (SQL `now()` here, `Date.now()` in `memory.ts`), so a
+ * frozen fixture drifts out of that window as the calendar moves and the test
+ * starts failing on a date nobody changed anything on.
+ *
+ * The offsets are what the assertions are really about — "a day old", "older
+ * than the window" — so express them that way and they stay true forever. Every
+ * other use here only needs relative order, which either choice would give.
+ */
+const NOW = Date.now();
 const daysAgo = (n: number) => new Date(NOW - n * 24 * 60 * 60 * 1000).toISOString();
 
 function report(overrides: Partial<NewMissedHour> = {}): NewMissedHour {
