@@ -4,7 +4,10 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "data:schools": "node scripts/fetch-schools.ts",
+    "predev": "npm run data:schools",
     "dev": "vite dev",
+    "prebuild": "npm run data:schools",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
