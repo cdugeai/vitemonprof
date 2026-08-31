@@ -221,9 +221,9 @@ come from the registry, not the form.
 
 ## §5 — P1 · Data quality
 
-- [ ] **Drop the dead `task` table.** `migrations/002_task.ts` documents it as
-      scaffold leftover that nothing in `src/` reads or writes. Its own numbered
-      migration, per that file's own note.
+- [x] **Drop the dead `task` table.** Created `migrations/005_drop_task.ts` and
+      applied to both Postgres (Neon) and DuckDB. The conformance suite confirms
+      the migration runs against both backends.
 - [ ] **Decide on duplicate submissions.** Nothing prevents the same report being
       submitted repeatedly — the 303 redirect only stops accidental _browser_
       resubmission. Consider a unique constraint on
