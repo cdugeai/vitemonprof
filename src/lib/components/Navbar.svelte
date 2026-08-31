@@ -9,12 +9,14 @@
     <!-- Header Row: Logo and Region -->
     <div class="flex min-h-16 items-center justify-between py-2">
       <!-- Logo and Brand -->
-      <div class="flex items-center gap-3 shrink-0">
-        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+      <div class="flex shrink-0 items-center gap-3">
+        <div
+          class="bg-primary text-primary-foreground flex h-10 w-10 items-center justify-center rounded-lg"
+        >
           <BookOpen class="h-5 w-5" />
         </div>
         <div class="flex flex-col">
-          <a href="/" class="text-lg font-bold text-gray-900 transition hover:text-primary">
+          <a href="/" class="hover:text-primary text-lg font-bold text-gray-900 transition">
             ViteMonProf
           </a>
           <span class="text-xs text-gray-600">Suivre les heures manquées</span>
@@ -22,7 +24,9 @@
       </div>
 
       <!-- Region Badge -->
-      <div class="shrink-0 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-900">
+      <div
+        class="shrink-0 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-900"
+      >
         France
       </div>
     </div>

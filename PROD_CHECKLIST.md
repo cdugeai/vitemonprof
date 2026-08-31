@@ -93,31 +93,71 @@ Measured on `data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-sec
 
 ## §2 — P0 · better-auth: make dormant mean dormant
 
-- [ ] **Generate the schema.** `npm run auth:schema` — overwrites the stub at
+- [x] **Generate the schema.** `npm run auth:schema` — overwrites the stub at
       `src/lib/server/db/auth.schema.ts`, which `src/lib/server/db/schema.ts`
-      re-exports into `drizzleAdapter(db)`.
-- [ ] **Write `migrations/004_better_auth.ts`** for `user`, `session`, `account`,
-      `verification`. Follow the constraints in `CLAUDE.md`: no `serial`, no
-      `generated as identity`, no `alter table … drop/add constraint` — the same
-      files run against DuckDB via `duckdbDialect.ts`, and
-      `repo.conformance.spec.ts` replays every migration into `:memory:` on each
-      `npm run test:unit`. If any table needs an integer key, use an explicit
-      sequence plus a `nextval(...)` default the way `002_task.ts` does;
-      better-auth's own defaults are text ids, which both engines take as-is.
-      Then `npm run db:migrate` and `npm run db:types`.
-- [ ] **Narrow the session lookup in `src/hooks.server.ts`.** `handleBetterAuth`
-      calls `auth.api.getSession()` on every request — including `/api/schools`
-      and every static asset — which is a Postgres roundtrip per request on a
-      serverless host. Skip it unless the request carries a session cookie, and
-      short-circuit for `/api/*`.
-- [ ] **Hide the demo routes.** `src/routes/demo/`, `src/routes/demo/better-auth/`
-      and its `login/` are scaffold code reachable in production. Delete them, or
-      guard behind `dev` from `$app/environment`. The signup action there creates
-      real accounts against the real database.
+      re-exports into `drizzleAdapter(db)`. Two things to know before touching it
+      again: the generator formats with its own bundled Prettier defaults (double
+      quotes, 80 columns) and never reads `.prettierrc.json`, so `npm run format`
+      afterwards is not optional; and the **column names it emits are
+      snake_case** (`email_verified`, `user_id`) while the TypeScript property
+      names stay camelCase, because `camelCase` is unset in the adapter config
+      and `convertToSnakeCase` therefore applies to every field. Migration 004
+      had to match the columns, not the properties.
+- [x] **Write `migrations/004_better_auth.ts`** for `user`, `session`, `account`,
+      `verification`. Text primary keys throughout — better-auth generates its
+      own string ids, so no sequence and no `nextval` were needed and DuckDB's
+      missing `serial` never came up. Two judgement calls are recorded in the
+      file's own doc comment:
+  - **`on delete cascade` is applied on Postgres only.** DuckDB parses the
+    constraint but rejects the action outright (`FOREIGN KEY constraints cannot
+use CASCADE, SET NULL or SET DEFAULT`), so the migration probes
+    `select version()` — the one discriminator that works, since `DuckDbAdapter`
+    reports the same capabilities as `PostgresAdapter` — and adds the action for
+    Postgres, the only engine better-auth ever talks to. DuckDB still enforces
+    the plain key.
+  - **Timestamps are `timestamp with time zone`** even though the generated
+    Drizzle schema says plain `timestamp()`. Drizzle builds no DDL any more, and
+    postgres-js parses oids 1082/1114/1184 through the same `new Date(x)` — so a
+    tz-less column reads back as _local_ time and silently shifts
+    `session.expires_at` off UTC.
+  - ~~`npm run db:types`~~ — moot. `scripts/gen-types.ts` excludes
+    `(user|session|account|verification|…)` on purpose, so the generated types do
+    not move. Verified: the file comes back byte-identical.
+- [x] **Narrow the session lookup in `src/hooks.server.ts`.** `getSession()` now
+      runs only when the request carries a better-auth cookie (`getSessionCookie`
+      from `better-auth/cookies` — header parsing only, no crypto, no database)
+      and the path is not under `/api/`. `svelteKitHandler` deliberately still
+      runs on every path: `/api/auth/*` lives under `/api/`, so an early
+      `resolve(event)` would take better-auth's whole HTTP surface offline.
+- [x] **Hide the demo routes.** Deleted outright — `src/routes/demo/` and its
+      five files. Guarding on `dev` would have left the `signUpEmail` action one
+      env flag from live. Nothing else referenced them; `src/app.d.ts` keeps its
+      `Locals` declaration, which now has a writer and no reader, as intended.
+- [x] **Close better-auth's own endpoints** — _not in the original list, and the
+      gap this section would otherwise have shipped with._ Deleting the demo
+      pages removes the UI, not the routes: `svelteKitHandler` serves
+      `POST /api/auth/sign-up/email` whether or not anything links to it, so
+      anonymous account creation against Neon stayed open. `src/lib/server/auth.ts`
+      now sets `emailAndPassword: { enabled: false }`, which unregisters sign-up
+      and sign-in both. Verified that this does not move the generated schema —
+      `account.password` is unconditional in better-auth's table definitions.
+      When a real login lands, the graduated options are
+      `{ enabled: true, disableSignUp: true }` (sign-in works, sign-up 400s
+      everywhere) or top-level `disabledPaths: ['/sign-up/email']` (the router
+      404s the HTTP route while `auth.api.signUpEmail()` stays callable from a
+      server action — the shape an invite-only flow needs).
+- [x] **Apply 004 to both Postgres targets.** Docker first, then Neon `dev`;
+      `npm run db:diff` reports `schemas match`. Both foreign keys report a
+      delete rule of `CASCADE` on Postgres, so the `select version()` probe does
+      what it claims — and DuckDB gets the plain key, which the conformance suite proves
+      on every `npm run test:unit`. The `down()` drop order was smoke-tested on
+      the container only (down, verify the four tables are gone, up); the
+      conformance suite never runs `down`, so that path has no other coverage.
 - [ ] **Confirm `ORIGIN` and `BETTER_AUTH_SECRET` are set in Vercel.**
-      `src/lib/server/auth.ts` reads both from `$env/dynamic/private`; `baseURL`
-      being wrong breaks cookie/callback handling. Secret must be 32+ chars of
-      real entropy, per `.env.example`.
+      `src/lib/server/auth.ts` reads both from `$env/dynamic/private`. `ORIGIN`
+      must be scheme + host with no trailing slash: it becomes better-auth's
+      `baseURL`, and `isAuthPath` compares `url.origin !== baseURL.origin`, so a
+      mismatch makes every `/api/auth/*` request fall through to SvelteKit and 404. Secret must be 32+ chars of real entropy, per `.env.example`.
 
 ## §3 — P0 · Write path: abuse, validation, and unbounded reads
 
