@@ -16,6 +16,7 @@
   import type { ClassLevel } from '$lib/classLevels';
   import type { Discipline } from '$lib/disciplines';
 
+
   let selectedClass: ClassLevel | undefined = $state();
   let selectedClassGroup: ClassGroup | undefined = $state();
   let selectedDiscipline: Discipline | undefined = $state();
@@ -57,6 +58,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>Accueil — ViteMonProf</title>
+</svelte:head>
+
 <div class="mx-auto max-w-7xl px-4 py-8 md:px-8">
   <!-- Hero Section -->
   <section class="mb-6">
@@ -65,7 +70,7 @@
         Moniteur national des absences en classe
       </p>
       <h1 class="text-foreground mb-4 text-5xl font-bold md:text-5xl">
-        Le suivi des abscences non remplacées.
+        Le suivi des absences non remplacées.
       </h1>
       <p class="text-muted-foreground text-lg">
         Les parents et les élèves peuvent enregistrer les absences des enseignants et contribuer à

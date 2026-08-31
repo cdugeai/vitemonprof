@@ -2,6 +2,10 @@
   import * as Card from '$lib/components/ui/card';
 </script>
 
+<svelte:head>
+  <title>À propos — ViteMonProf</title>
+</svelte:head>
+
 <div class="mx-auto max-w-4xl px-4 py-12">
   <h1 class="mb-8 text-4xl font-bold">About ViteMonProf</h1>
 
