@@ -5,6 +5,7 @@
   import { Label } from '$lib/components/ui/label';
   import { buildLabelSchool } from '$lib/utils';
   import { createSelectSearchFocus } from './searchableSelect';
+  import { fetchGzipJson } from '$lib/gzip-json';
 
   let {
     // eslint-disable-next-line no-useless-assignment
@@ -39,13 +40,8 @@
 
   async function fetchSchools(query: string, signal: AbortSignal): Promise<School[]> {
     const params = new URLSearchParams({ query_string: query });
-    const res = await fetch(`/api/schools?${params}`, { signal });
 
-    if (!res.ok) {
-      throw new Error(`GET /api/schools failed: ${res.status}`);
-    }
-
-    return res.json();
+    return fetchGzipJson<School[]>(`/api/schools?${params}`, { signal });
   }
 
   // `$effect` re-runs whenever `typedText` changes. Its cleanup both cancels the pending

@@ -53,6 +53,29 @@ Styling is **Tailwind CSS v4** (via `@tailwindcss/vite`) plus **shadcn-svelte** 
 - `components.json` config: style `vega`, base color `neutral`, icons via `lucide` (`@lucide/svelte`), aliases `$lib/components`, `$lib/components/ui`, `$lib/utils`, `$lib/hooks`.
 - Use the `cn()` helper from `src/lib/utils.ts` (clsx + tailwind-merge) when a component needs to merge/override incoming `class` props — this is the standard shadcn-svelte pattern.
 
+## `/api/schools` speaks gzipped JSON
+
+The endpoint answers with **gzip bytes typed `application/gzip`**, not JSON — the
+full registry is ~12.4 MB of JSON and ~3.2 MB gzipped. Compression is done with
+[pako](https://www.npmjs.com/package/pako) at both ends:
+
+- `$lib/server/gzip-json` — `gzipJson(value)` (bytes) and `gzipJsonResponse(bytes)`
+- `$lib/gzip-json` — `fetchGzipJson<T>(url, init)`, the drop-in replacement for
+  `fetch(url).then((r) => r.json())`. Never call `res.json()` on this endpoint.
+
+Two things are deliberate:
+
+- **`Content-Type`, not `Content-Encoding`.** Naming gzip as a transfer encoding
+  makes the browser and every proxy inflate the body before our code sees it, so
+  `pako.ungzip` would be handed plain JSON and throw. What we inflate ourselves is
+  content, not encoding.
+- **The all-schools buffer is cached compressed** in `+server.ts`. It's identical
+  for every caller, and gzipping it costs ~380 ms — 3 ms once cached.
+
+Split into two modules so the client chunk only tree-shakes in pako's inflate half.
+pako 3 renamed the decode option: it is `{ toText: true }`, and the old
+`{ to: 'string' }` is now ignored silently (you get a `Uint8Array` back).
+
 ## Maplibre GL
 
 Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.

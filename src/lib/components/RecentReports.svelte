@@ -7,6 +7,7 @@
   import type { School } from '$lib/types/school';
   import { formatRelativeTime } from '$lib/utils';
   import Inbox from '@lucide/svelte/icons/inbox';
+  import { fetchGzipJson } from '$lib/gzip-json';
 
   interface Props {
     missed_hours: MissedHour[];
@@ -30,13 +31,7 @@
     signal: AbortSignal
   ): Promise<Map<string, School>> {
     const query = new URLSearchParams(ids.map((id) => ['id', id]));
-    const res = await fetch(`/api/schools?${query}`, { signal });
-
-    if (!res.ok) {
-      throw new Error(`GET /api/schools failed: ${res.status}`);
-    }
-
-    const schools: School[] = await res.json();
+    const schools = await fetchGzipJson<School[]>(`/api/schools?${query}`, { signal });
 
     return new Map(schools.map((s) => [s.id, s]));
   }
