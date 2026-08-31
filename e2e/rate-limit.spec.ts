@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { resetRateLimit } from './support/rate-limit';
 
 test.describe('rate limiting', () => {
+  // Each test below spends the full quota, so without this they'd only pass in the
+  // order they happen to be declared — the second test's "submit 5 times to reach
+  // the limit" loop would already be starting from a full bucket.
+  test.beforeEach(async ({ request }) => {
+    await resetRateLimit(request);
+  });
+
   test('should allow 5 form submissions within 1 minute', async ({ page }) => {
     await page.goto('/');
 

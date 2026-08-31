@@ -23,7 +23,10 @@ export default defineConfig({
     // database. Without it these tests would write rows into whatever backend
     // `.env` happens to name — polluting a developer's local Postgres, and
     // failing outright when Docker is down.
-    env: { MISSED_HOUR_REPO: 'memory' },
+    // `E2E_TEST_HOOKS` unlocks `/api/test/*`, which is how a spec clears the
+    // rate limiter's in-process buckets between tests. Without it that route
+    // 404s, in dev as well as in production.
+    env: { MISSED_HOUR_REPO: 'memory', E2E_TEST_HOOKS: 'true' },
     stdout: 'pipe',
   },
   projects: [{ name: 'chromium', use: devices['Desktop Chrome'] }],

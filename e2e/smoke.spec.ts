@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('the page renders the report form and the recent-reports panel', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: /suivi des abscences/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /suivi des absences/i })).toBeVisible();
   await expect(page.getByText('Signaler une classe manquée')).toBeVisible();
   await expect(page.getByText('Rapports récents')).toBeVisible();
 });
