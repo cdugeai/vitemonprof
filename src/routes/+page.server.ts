@@ -10,6 +10,7 @@ import { isClassLevel } from '$lib/classLevels';
  * isn't a day, and `Date.parse` would quietly roll it over to March 3rd.
  * Round-tripping through ISO catches that.
  *
+ * Also rejects future dates and anything older than ~1 school year (365 days).
  * The `date` column would reject bad input anyway, but a driver error surfaces as a
  * 500; validating here gives the user a 400 and a message they can act on.
  */
@@ -18,7 +19,27 @@ function isCalendarDate(value: string): boolean {
 
   const parsed = new Date(`${value}T00:00:00Z`);
 
-  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
+  if (Number.isNaN(parsed.getTime()) || !parsed.toISOString().startsWith(value)) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  // Reject future dates
+  if (parsed > today) {
+    return false;
+  }
+
+  // Reject dates older than ~1 school year (365 days)
+  const oneYearAgo = new Date(today);
+  oneYearAgo.setUTCDate(today.getUTCDate() - 365);
+
+  if (parsed < oneYearAgo) {
+    return false;
+  }
+
+  return true;
 }
 
 export const load: PageServerLoad = () => {
@@ -73,7 +94,7 @@ export const actions = {
     }
 
     if (!isCalendarDate(String(date))) {
-      return fail(400, { error: 'Date must be a valid calendar date (YYYY-MM-DD)' });
+      return fail(400, { error: 'Date must be valid, not in the future, and within the last year' });
     }
 
     const hoursNum = parseInt(String(nbHours), 10);
