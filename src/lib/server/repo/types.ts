@@ -31,11 +31,13 @@ export interface MissedHourRepo {
    * All reports, **newest first** (`createdAt` descending).
    *
    * The order is part of the contract, not an accident of the implementation:
-   * `RecentReports.svelte` takes `.slice(0, 5)` and labels them "récents", so an
-   * insertion-ordered result would show the five *oldest* reports once there are
-   * more than five.
+   * `RecentReports.svelte` labels them "récents", so an insertion-ordered result
+   * would show the oldest reports.
+   *
+   * @param limit Optional upper bound on the number of rows returned. If undefined,
+   *              no limit is applied.
    */
-  list(): Promise<MissedHour[]>;
+  list(limit?: number): Promise<MissedHour[]>;
 
   /**
    * Aggregates for the stats panel.

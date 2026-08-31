@@ -41,8 +41,8 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
       await connection.run(q.sql, bind(q));
     },
 
-    async list() {
-      const q = listMissedHours('duckdb');
+    async list(limit?: number) {
+      const q = listMissedHours('duckdb', limit);
       const reader = await connection.runAndReadAll(q.sql, bind(q));
 
       return reader.getRowObjects().map((r) => {

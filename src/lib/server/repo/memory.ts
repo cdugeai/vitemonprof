@@ -28,12 +28,13 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
       nextId += 1;
     },
 
-    async list() {
+    async list(limit?: number) {
       await jitter();
 
       // Copy before sorting: `toSorted` would also work, but an explicit copy makes
       // it obvious we're not reordering the stored array under other callers.
-      return [...rows].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+      const sorted = [...rows].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+      return limit !== undefined ? sorted.slice(0, limit) : sorted;
     },
 
     async stats() {
