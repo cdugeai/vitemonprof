@@ -96,7 +96,8 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
             // hands both back as strings — the same reason `stats()` funnels
             // everything through `Number`.
             totalHours: Number(r[TOP_ALIAS.totalHours]),
-            reportCount: Number(r[TOP_ALIAS.reportCount]),
+            events: Number(r[TOP_ALIAS.events]),
+            submissions: Number(r[TOP_ALIAS.submissions]),
           }) satisfies TopMissedHours
       );
     },

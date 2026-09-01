@@ -96,10 +96,20 @@ describe('listMissedHours', () => {
 });
 
 describe('statsMissedHours', () => {
+  it('reads the deduplicated view, not the raw table', () => {
+    // The whole point of migration 007: summing `nb_hours` over `missed_hour`
+    // counts a corroborated hour once per reporter, which overstated the live
+    // totals by 54%.
+    const { sql } = statsMissedHours();
+
+    expect(sql).toContain('from "missed_hour_event"');
+    expect(sql).not.toMatch(/from "missed_hour"/);
+  });
+
   it('scopes the rolling window with a FILTER clause and a bound parameter', () => {
     const { sql, parameters } = statsMissedHours(7);
 
-    expect(sql).toContain('filter(where "created_at" >=');
+    expect(sql).toContain('filter(where "first_reported_at" >=');
     // Bound, not baked into the string — the reason this survives a change of
     // window length without touching the SQL.
     expect(parameters).toEqual([7]);
@@ -122,6 +132,20 @@ describe('statsMissedHours', () => {
 });
 
 describe('topMissedHours', () => {
+  it('reads the deduplicated view, not the raw table', () => {
+    const { sql } = topMissedHours({ departement: '75', dimension: 'school', limit: 5 });
+
+    expect(sql).toContain('from "missed_hour_event"');
+    expect(sql).not.toMatch(/from "missed_hour"/);
+  });
+
+  it('counts distinct hours and the submissions behind them separately', () => {
+    const { sql } = topMissedHours({ departement: '75', dimension: 'school', limit: 5 });
+
+    expect(sql).toContain('count(*) as "events"');
+    expect(sql).toContain('sum("submissions") as "submissions"');
+  });
+
   const query = (overrides = {}) =>
     topMissedHours({ departement: '75', dimension: 'school', limit: 5, ...overrides });
 

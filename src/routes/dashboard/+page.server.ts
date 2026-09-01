@@ -13,7 +13,10 @@ export interface RankedEntry {
   /** Secondary line — a school's town, or nothing for a discipline. */
   sublabel: string | null;
   totalHours: number;
-  reportCount: number;
+  /** Distinct missed hours — not how many people reported them. */
+  events: number;
+  /** Reports behind those events, so corroboration stays visible. */
+  submissions: number;
 }
 
 /**

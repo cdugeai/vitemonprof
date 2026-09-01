@@ -244,8 +244,24 @@
                     ></div>
                   </div>
 
+                  <!--
+                    Two numbers, because they mean different things: the ranking
+                    counts distinct missed hours, and the submissions behind them
+                    are the corroboration.
+
+                    Always both, with no condition. This line is the only place
+                    corroboration appears on the dashboard — there is no
+                    « Signalé N fois » badge here — so a number that comes and
+                    goes would make its absence ambiguous. Shown every time, the
+                    pair reads as a ratio the eye can compare down the column:
+                    « 3 créneaux · 3 signalements » is three lone reports, and
+                    « 3 créneaux · 12 signalements » is the same three hours with
+                    real weight behind them.
+                  -->
                   <p class="text-muted-foreground mt-1 text-xs">
-                    {entry.reportCount} signalement{entry.reportCount > 1 ? 's' : ''}
+                    {entry.events} créneau{entry.events > 1 ? 'x' : ''}
+                    <span aria-hidden="true">·</span>
+                    {entry.submissions} signalement{entry.submissions > 1 ? 's' : ''}
                   </p>
                 </div>
               </li>

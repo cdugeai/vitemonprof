@@ -88,6 +88,16 @@ export interface TopMissedHours {
    * labels live.
    */
   key: string;
+  /** Hours actually lost — each distinct missed hour counted once. */
   totalHours: number;
-  reportCount: number;
+  /**
+   * How many *distinct* missed hours, not how many people reported them.
+   *
+   * Five people describing one cancelled maths hour is `events: 1,
+   * submissions: 5`. Ranking on submissions would put a well-corroborated
+   * single hour above a school that genuinely lost three.
+   */
+  events: number;
+  /** How many reports stand behind those events, corroboration included. */
+  submissions: number;
 }
