@@ -4,7 +4,7 @@ import { missedHourRepo } from '$lib/server/repo';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import { isClassLevel } from '$lib/classLevels';
-import { checkRateLimit } from '$lib/server/rateLimit';
+import { checkDuplicateSubmission, checkRateLimit } from '$lib/server/rateLimit';
 import { getSchoolsInfo } from '$lib/server/data';
 
 /**
@@ -112,9 +112,32 @@ export const actions = {
       return fail(400, { error: 'Hours must be between 1 and 4' });
     }
 
-    // No id: `missed_hour.id` is a sequence now, so the store assigns it. The
-    // action never needed to know it — it answers with a redirect, not with the
-    // row — which is what made the client-generated UUID safe to drop.
+    // Everything above has been validated, which is why the duplicate check
+    // waits until here: fingerprinting a report that is about to be rejected
+    // anyway would fill the store with keys nothing can ever match.
+    const report = {
+      schoolId: String(schoolId),
+      class: String(className),
+      // The empty string is what a form sends for "nothing chosen"; the store only
+      // speaks `null`, so the collapse happens here at the boundary.
+      classGroup: isClassGroup(classGroup) ? classGroup : null,
+      discipline: isDiscipline(discipline) ? discipline : null,
+      date_: String(date),
+      nbHours: hoursNum,
+    };
+
+    // The burst limit at the top of this action and this check guard different
+    // mistakes. Five submissions a minute is a *volume* the site allows on
+    // purpose — someone filing a week of absences in one sitting — so a batch of
+    // five *different* reports has to go through. The same report twice is a
+    // double-tapped button or a replayed form, and no legitimate flow produces
+    // it.
+    if (!checkDuplicateSubmission(clientIp, report)) {
+      return fail(429, {
+        error: 'Vous avez déjà effectué ce signalement.',
+      });
+    }
+
     // Resolved here, from the registry, rather than taken from the form. The
     // client has no business asserting which département a school is in: it is a
     // fact about the school, the server already knows it, and accepting it from
@@ -123,16 +146,12 @@ export const actions = {
     // département-scoped query then excludes.
     const school = getSchoolsInfo([String(schoolId)]).get(String(schoolId));
 
+    // No id: `missed_hour.id` is a sequence now, so the store assigns it. The
+    // action never needed to know it — it answers with a redirect, not with the
+    // row — which is what made the client-generated UUID safe to drop.
     await missedHourRepo.add({
-      schoolId: String(schoolId),
+      ...report,
       departement: school?.departement ?? null,
-      class: String(className),
-      // The empty string is what a form sends for "nothing chosen"; the store only
-      // speaks `null`, so the collapse happens here at the boundary.
-      classGroup: isClassGroup(classGroup) ? classGroup : null,
-      discipline: isDiscipline(discipline) ? discipline : null,
-      date_: String(date),
-      nbHours: hoursNum,
       createdAt: new Date().toISOString(),
     });
 
