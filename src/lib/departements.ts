@@ -159,40 +159,62 @@ export function departementFromInsee(insee: string): DepartementCode | null {
 }
 
 /**
+ * Postal codes that do not name the collectivité they belong to.
+ *
+ * Verified against the registry's INSEE column, these are every code where the
+ * three-digit rule below lands somewhere else — all of them in the Antilles,
+ * where Saint-Barthélemy and Saint-Martin were carved out of Guadeloupe in 2007
+ * and kept the postal codes they already had.
+ *
+ * The `970xx` pair are CEDEX codes, which the three-digit rule cannot even guess
+ * at: `970` is not a département, so without this map they return `null`.
+ */
+const OVERSEAS_POSTAL_OVERRIDES = new Map<string, string>([
+  ['97095', '977'], // Saint-Barthélemy (CEDEX)
+  ['97133', '977'], // Saint-Barthélemy — Gustavia
+  ['97052', '978'], // Saint-Martin (CEDEX)
+  ['97150', '978'], // Saint-Martin — Marigot
+]);
+
+/**
  * The département a postal code sits in.
  *
- * Three rules, because French postal codes only *usually* start with their
- * département:
+ * French postal codes only *usually* start with their département, so this is
+ * four rules deep:
  *
+ * - **Known exceptions first** — `OVERSEAS_POSTAL_OVERRIDES`. `97150` is
+ *   Saint-Martin and `97133` is Saint-Barthélemy, even though both sit inside
+ *   Guadeloupe's `971xx` block.
+ * - **`978xx` is La Réunion**, not Saint-Martin. Those are La Réunion's CEDEX
+ *   codes, and they read as `978` under a naive three-digit rule.
+ * - **`97xxx` / `98xxx` — three digits, not two.** `97400` is `974`
+ *   (La Réunion), `98800` is `988` (Nouvelle-Calédonie). This reproduces every
+ *   published range: 97100-97190 → `971`, 97200-97290 → `972`, 97300-97390 →
+ *   `973`, 97400-97490 → `974`, 97600+ → `976`.
  * - **`20xxx` — Corsica.** The département is `2A` or `2B`, which appears in no
  *   postal code at all. Below `20200` is Corse-du-Sud, from `20200` up is
  *   Haute-Corse.
- * - **`97xxx` / `98xxx` — overseas.** Three digits, not two: `97400` is `974`
- *   (La Réunion), `98800` is `988` (Nouvelle-Calédonie). This one rule
- *   reproduces every published range — 97100-97190 → `971`, 97200-97290 → `972`,
- *   97300-97390 → `973`, 97400-97490 → `974`, 97600+ → `976` — and additionally
- *   gets `977` (Saint-Barthélemy) and `978` (Saint-Martin) right, which "from
- *   97600 up is Mayotte" would swallow into `976`. 64 schools live in those two.
- * - **Everything else.** The first two digits.
+ * - **Everything else** — the first two digits.
  *
- * Returns `null` for anything that is not five digits or does not land on a
- * real département — `20xxx` is the only range where a plausible-looking code
- * can still be nonsense, but `96xxx` and `979xx` exist as typos.
+ * Returns `null` for anything that is not five digits or does not land on a real
+ * département.
  *
- * **Corsica is inexact, and cannot be made exact.** Corsican postal codes
+ * **Corsica remains inexact, and cannot be made exact.** Corsican postal codes
  * interleave across the two départements: measured against the registry's own
- * INSEE column, `205xx` and `207xx` are Corse-du-Sud while the `20200`-and-up
- * rule calls them Haute-Corse. That is 2 schools out of 63,985 (0.003%), and no
- * prefix rule can fix it, because the two départements genuinely share prefixes.
- * `departementFromInsee` is exact and is what the school registry actually uses;
- * this function is the fallback for a school whose INSEE code is unusable.
+ * INSEE column, `20537` and `20700` are Corse-du-Sud while the `20200`-and-up
+ * rule calls them Haute-Corse. No prefix rule can fix that, because the two
+ * départements genuinely share prefixes. A handful of métropole codes also
+ * straddle a border, because the post office routes by delivery office rather
+ * than by administrative boundary. `departementFromInsee` is exact and is what
+ * the school registry actually uses; this function is the fallback for a school
+ * whose INSEE code is unusable.
  */
 export function departementFromPostalCode(postalCode: string): DepartementCode | null {
   const digits = postalCode.trim();
 
   if (!/^\d{5}$/.test(digits)) return null;
 
-  const code = corsicaOrNull(digits) ?? overseasOrNull(digits) ?? digits.slice(0, 2);
+  const code = overseasOrNull(digits) ?? corsicaOrNull(digits) ?? digits.slice(0, 2);
 
   return isDepartement(code) ? code : null;
 }
@@ -204,7 +226,14 @@ function corsicaOrNull(digits: string): string | null {
   return Number(digits) < 20200 ? '2A' : '2B';
 }
 
-/** `97xxx` / `98xxx` -> the three-digit collectivité code. */
+/** `97xxx` / `98xxx` -> the three-digit collectivité code, exceptions first. */
 function overseasOrNull(digits: string): string | null {
+  const override = OVERSEAS_POSTAL_OVERRIDES.get(digits);
+  if (override) return override;
+
+  // Checked before the generic three-digit slice, which would read these as
+  // Saint-Martin.
+  if (digits.startsWith('978')) return '974';
+
   return digits.startsWith('97') || digits.startsWith('98') ? digits.slice(0, 3) : null;
 }
