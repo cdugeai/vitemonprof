@@ -16,19 +16,13 @@ export interface MissedHour {
   class_group: string | null;
   created_at: Generated<Timestamp>;
   date: Timestamp;
+  departement: string | null;
   discipline: string | null;
   id: Generated<number>;
   nb_hours: number;
   school_id: string;
 }
 
-export interface Task {
-  id: Generated<number>;
-  priority: Generated<number>;
-  title: string;
-}
-
 export interface DB {
   missed_hour: MissedHour;
-  task: Task;
 }

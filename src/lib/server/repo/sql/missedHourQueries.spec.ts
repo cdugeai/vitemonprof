@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { NewMissedHour } from '$lib/types/missedHours';
-import { insertMissedHour, listMissedHours, statsMissedHours } from './missedHourQueries';
+import {
+  insertMissedHour,
+  listMissedHours,
+  statsMissedHours,
+  topMissedHours,
+} from './missedHourQueries';
 
 const REPORT: NewMissedHour = {
   schoolId: '0761322Z',
@@ -10,6 +15,7 @@ const REPORT: NewMissedHour = {
   date_: '2026-08-17',
   nbHours: 2,
   createdAt: '2026-08-18T09:00:00.000Z',
+  departement: '76',
 };
 
 describe('insertMissedHour', () => {
@@ -48,9 +54,14 @@ describe('insertMissedHour', () => {
   });
 
   it('passes null through for the optional columns', () => {
-    const { parameters } = insertMissedHour({ ...REPORT, classGroup: null, discipline: null });
+    const { parameters } = insertMissedHour({
+      ...REPORT,
+      classGroup: null,
+      discipline: null,
+      departement: null,
+    });
 
-    expect(parameters.filter((p) => p === null)).toHaveLength(2);
+    expect(parameters.filter((p) => p === null)).toHaveLength(3);
   });
 });
 
@@ -107,5 +118,55 @@ describe('statsMissedHours', () => {
 
   it('quotes `class`, which is a reserved word in plenty of engines', () => {
     expect(statsMissedHours().sql).not.toMatch(/distinct class\b/);
+  });
+});
+
+describe('topMissedHours', () => {
+  const query = (overrides = {}) =>
+    topMissedHours({ departement: '75', dimension: 'school', limit: 5, ...overrides });
+
+  it('groups by school for the school dimension and by discipline for the other', () => {
+    expect(query({ dimension: 'school' }).sql).toContain('group by "school_id"');
+    expect(query({ dimension: 'discipline' }).sql).toContain('group by "discipline"');
+  });
+
+  it('ranks by total hours, not by number of reports', () => {
+    // The distinction matters: hours is the quantity the site measures, and the
+    // one that is harder to inflate by filing many small reports.
+    expect(query().sql).toContain('order by sum("nb_hours") desc');
+  });
+
+  it('breaks ties on the key so two reloads agree', () => {
+    // Without this the engine returns equal groups in whatever order its hash
+    // aggregate produced, which is not stable even between runs of one query.
+    expect(query().sql).toMatch(/order by sum\("nb_hours"\) desc, "school_id" asc/);
+  });
+
+  it('drops rows with no value for the grouped column', () => {
+    // Reports that named no discipline would otherwise rank first under a label
+    // that names no subject.
+    expect(query({ dimension: 'discipline' }).sql).toContain('"discipline" is not null');
+  });
+
+  it('binds the département rather than splicing it into the SQL', () => {
+    const { sql, parameters } = query({ departement: '2A' });
+
+    expect(sql).not.toContain('2A');
+    expect(parameters).toContain('2A');
+  });
+
+  it('omits the filter entirely for a national ranking', () => {
+    // Not `departement is null`, which would match only the rows written before
+    // migration 006 and never backfilled.
+    const { sql } = query({ departement: null });
+
+    expect(sql).not.toContain('"departement"');
+  });
+
+  it('binds the limit too, and applies it in SQL', () => {
+    const { sql, parameters } = query({ limit: 5 });
+
+    expect(sql).toContain('limit');
+    expect(parameters).toContain(5);
   });
 });

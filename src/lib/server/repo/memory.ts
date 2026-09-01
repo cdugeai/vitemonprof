@@ -1,4 +1,9 @@
-import type { MissedHour, MissedHourStats, NewMissedHour } from '$lib/types/missedHours';
+import type {
+  MissedHour,
+  MissedHourStats,
+  NewMissedHour,
+  TopMissedHours,
+} from '$lib/types/missedHours';
 import { CORROBORATION_KEY, STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
 
 /**
@@ -72,7 +77,46 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
         schools_affected: new Set(rows.map((m) => m.schoolId)).size,
       } satisfies MissedHourStats;
     },
+
+    async top({ departement, dimension, limit }) {
+      await jitter();
+
+      const totals = new Map<string, TopMissedHours>();
+
+      for (const row of rows) {
+        if (departement !== null && row.departement !== departement) continue;
+
+        // The `null` case is the discipline nobody named. Skipped rather than
+        // bucketed, exactly as the SQL's `is not null` does.
+        const key = dimension === 'school' ? row.schoolId : row.discipline;
+        if (key === null) continue;
+
+        const entry = totals.get(key) ?? { key, totalHours: 0, reportCount: 0 };
+        entry.totalHours += row.nbHours;
+        entry.reportCount += 1;
+        totals.set(key, entry);
+      }
+
+      return [...totals.values()]
+        .sort((a, b) => b.totalHours - a.totalHours || compareKeys(a.key, b.key))
+        .slice(0, limit);
+    },
   };
+}
+
+/**
+ * The tie-break, by code unit rather than by locale.
+ *
+ * `localeCompare` would be the reflex, and it is the wrong reflex here: it puts
+ * `'a'` before `'B'`, which no database's default collation agrees with, so the
+ * conformance suite would start failing on ties for reasons that have nothing to
+ * do with the ranking. The keys are UAI codes and discipline ids — ASCII, both
+ * of them — so a plain comparison is both correct and stable.
+ */
+function compareKeys(a: string, b: string): number {
+  if (a === b) return 0;
+
+  return a < b ? -1 : 1;
 }
 
 /**

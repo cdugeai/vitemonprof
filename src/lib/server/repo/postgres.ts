@@ -1,13 +1,15 @@
 import type { Sql } from 'postgres';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
-import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
+import type { MissedHour, MissedHourStats, TopMissedHours } from '$lib/types/missedHours';
 import type { MissedHourRepo } from './types';
 import {
   LIST_ALIAS,
+  TOP_ALIAS,
   insertMissedHour,
   listMissedHours,
   statsMissedHours,
+  topMissedHours,
 } from './sql/missedHourQueries';
 
 /**
@@ -58,6 +60,7 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
           classGroup: isClassGroup(classGroup) ? classGroup : null,
           discipline: isDiscipline(discipline) ? discipline : null,
           date_: String(r[LIST_ALIAS.date]),
+          departement: nullableString(r[LIST_ALIAS.departement]),
           nbHours: Number(r[LIST_ALIAS.nbHours]),
           createdAt: new Date(Number(r[LIST_ALIAS.createdAtMs])).toISOString(),
           // `count(*)` is a bigint/numeric on the wire in both engines, same as
@@ -81,5 +84,32 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
         classes_affected: Number(row?.classes_affected ?? 0),
       } satisfies MissedHourStats;
     },
+
+    async top(options) {
+      const rows = await run(topMissedHours(options));
+
+      return rows.map(
+        (r) =>
+          ({
+            key: String(r[TOP_ALIAS.key]),
+            // `sum()` is `numeric` and `count()` is `bigint`, so postgres-js
+            // hands both back as strings — the same reason `stats()` funnels
+            // everything through `Number`.
+            totalHours: Number(r[TOP_ALIAS.totalHours]),
+            reportCount: Number(r[TOP_ALIAS.reportCount]),
+          }) satisfies TopMissedHours
+      );
+    },
   };
+}
+
+/**
+ * A nullable `text` column as a domain `string | null`.
+ *
+ * `String(null)` is `'null'` — a four-character string that is truthy, renders
+ * as "null" and compares equal to nothing useful. Every nullable column on the
+ * way out needs this guard, not a cast.
+ */
+function nullableString(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value);
 }

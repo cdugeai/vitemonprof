@@ -9,7 +9,7 @@ import {
 } from 'kysely';
 import type { DB } from '$lib/server/db/types.generated';
 import type { NewMissedHour } from '$lib/types/missedHours';
-import { STATS_WINDOW_DAYS } from '../types';
+import { STATS_WINDOW_DAYS, type TopQuery } from '../types';
 
 /**
  * `DB` is generated from the live database by `npm run db:types`, so the column
@@ -83,6 +83,7 @@ export function insertMissedHour(mh: NewMissedHour): SqlQuery {
       date: mh.date_,
       nb_hours: mh.nbHours,
       created_at: mh.createdAt,
+      departement: mh.departement,
     })
     .compile();
 }
@@ -98,6 +99,7 @@ export const LIST_ALIAS = {
   nbHours: 'nb_hours',
   createdAtMs: 'created_at_ms',
   corroborations: 'corroborations',
+  departement: 'departement',
 } as const;
 
 /**
@@ -144,6 +146,7 @@ export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
       'discipline',
       sql<string>`${eb.ref('date')}::text`.as(LIST_ALIAS.date),
       'nb_hours',
+      'departement',
       createdAtMillis(eb, dialect).as(LIST_ALIAS.createdAtMs),
       // A window function, not a self-join or a second round trip: `count(*) over
       // (partition by …)` is evaluated over the *whole* filtered table and only
@@ -199,4 +202,69 @@ export function statsMissedHours(windowDays: number = STATS_WINDOW_DAYS): SqlQue
       eb.fn.count('class').distinct().as('classes_affected'),
     ])
     .compile();
+}
+
+/** Column aliases `topMissedHours` selects into — shared so the row readers agree. */
+export const TOP_ALIAS = {
+  key: 'key',
+  totalHours: 'total_hours',
+  reportCount: 'report_count',
+} as const;
+
+/**
+ * The column each `TopDimension` groups by.
+ *
+ * A lookup rather than a ternary at the call site, and `satisfies` against the
+ * generated schema, so the dimension can never widen into an arbitrary string
+ * reaching `groupBy` — the one place in this module where a caller-supplied
+ * value would otherwise be spliced into SQL as an identifier rather than bound
+ * as a parameter.
+ */
+const DIMENSION_COLUMN = {
+  school: 'school_id',
+  discipline: 'discipline',
+} as const satisfies Record<string, keyof Database['missed_hour']>;
+
+/**
+ * The ranking behind the dashboard.
+ *
+ * `where … group by … order by … limit` — the whole thing runs in the engine and
+ * returns at most `limit` rows. The alternative, aggregating every row and
+ * ranking in JS, was never really on the table once `departement` became a
+ * column: see `migrations/006_missed_hour_departement.ts`.
+ *
+ * `is not null` on the grouping column does double duty. For `discipline` it
+ * drops the reports that never named a subject, which would otherwise rank first
+ * under the label "unknown"; for `school_id`, which is `not null` in the schema,
+ * it costs nothing and keeps one query serving both dimensions.
+ *
+ * The tie-break on the key is not cosmetic: without it two departments with
+ * equal totals come back in whatever order the engine's hash aggregate happens
+ * to produce, which can differ between two runs of the *same* query and makes
+ * the page flicker between reloads.
+ */
+export function topMissedHours({ departement, dimension, limit }: TopQuery): SqlQuery {
+  const column = DIMENSION_COLUMN[dimension];
+
+  let query = db
+    .selectFrom('missed_hour')
+    .select((eb) => [
+      eb.ref(column).as(TOP_ALIAS.key),
+      eb.fn.sum('nb_hours').as(TOP_ALIAS.totalHours),
+      eb.fn.countAll().as(TOP_ALIAS.reportCount),
+    ])
+    .where(column, 'is not', null)
+    .groupBy(column)
+    .orderBy((eb) => eb.fn.sum('nb_hours'), 'desc')
+    .orderBy(column, 'asc')
+    .limit(limit);
+
+  // `null` means "the whole country", which is the absence of a filter rather
+  // than `departement is null` — the latter would return only the rows that
+  // predate `006` and have never been backfilled.
+  if (departement !== null) {
+    query = query.where('departement', '=', departement);
+  }
+
+  return query.compile();
 }

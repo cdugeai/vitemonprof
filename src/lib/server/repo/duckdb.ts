@@ -1,13 +1,15 @@
 import type { DuckDBConnection, DuckDBValue } from '@duckdb/node-api';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
-import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
+import type { MissedHour, MissedHourStats, TopMissedHours } from '$lib/types/missedHours';
 import type { MissedHourRepo } from './types';
 import {
   LIST_ALIAS,
+  TOP_ALIAS,
   insertMissedHour,
   listMissedHours,
   statsMissedHours,
+  topMissedHours,
   type SqlQuery,
 } from './sql/missedHourQueries';
 
@@ -59,6 +61,7 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
           classGroup: isClassGroup(classGroup) ? classGroup : null,
           discipline: isDiscipline(discipline) ? discipline : null,
           date_: String(r[LIST_ALIAS.date]),
+          departement: nullableString(r[LIST_ALIAS.departement]),
           nbHours: Number(r[LIST_ALIAS.nbHours]),
           // `created_at_ms` arrives as a bigint, which `Number` narrows safely:
           // epoch millis stay exact well past the year 275760.
@@ -85,5 +88,32 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
         classes_affected: Number(row?.classes_affected ?? 0),
       } satisfies MissedHourStats;
     },
+
+    async top(options) {
+      const q = topMissedHours(options);
+      const reader = await connection.runAndReadAll(q.sql, bind(q));
+
+      return reader.getRowObjects().map(
+        (r) =>
+          ({
+            key: String(r[TOP_ALIAS.key]),
+            // Both aggregates arrive as bigint here rather than as strings; the
+            // `Number` is the same narrowing `list()` does for `created_at_ms`.
+            totalHours: Number(r[TOP_ALIAS.totalHours]),
+            reportCount: Number(r[TOP_ALIAS.reportCount]),
+          }) satisfies TopMissedHours
+      );
+    },
   };
+}
+
+/**
+ * A nullable `text` column as a domain `string | null`.
+ *
+ * `String(null)` is `'null'` — a four-character string that is truthy, renders
+ * as "null" and compares equal to nothing useful. Every nullable column on the
+ * way out needs this guard, not a cast.
+ */
+function nullableString(value: unknown): string | null {
+  return value === null || value === undefined ? null : String(value);
 }

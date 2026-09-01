@@ -49,6 +49,21 @@ export interface NewMissedHour {
   date_: string;
   nbHours: number;
   createdAt: string;
+
+  /**
+   * The département the school sits in (`'75'`, `'2A'`, `'974'`), resolved from
+   * the registry at write time.
+   *
+   * Denormalised on purpose — schools live in a CSV the database knows nothing
+   * about, so without this column no département-scoped query could be pushed
+   * down into the engine. See `migrations/006_missed_hour_departement.ts`.
+   *
+   * `null` for a report whose school is not in the registry, and for every row
+   * written before that migration until `scripts/backfill-departement.ts` has
+   * run. Nulls are excluded from département-scoped rankings rather than being
+   * bucketed somewhere plausible.
+   */
+  departement: string | null;
 }
 
 export interface MissedHourStats {
@@ -56,4 +71,23 @@ export interface MissedHourStats {
   total_hours_last_7d: number;
   schools_affected: number;
   classes_affected: number;
+}
+
+/** What a ranking groups by: schools, or the subjects that went untaught. */
+export type TopDimension = 'school' | 'discipline';
+
+/** One row of a ranking — see `MissedHourRepo.top`. */
+export interface TopMissedHours {
+  /**
+   * The grouped value: a school's UAI code when the dimension is `school`, a
+   * discipline id when it is `discipline`.
+   *
+   * Deliberately an opaque id, not a label. Schools are named by the CSV
+   * registry and disciplines by `$lib/disciplines`, neither of which the storage
+   * layer has any business knowing about — so the rendering happens where the
+   * labels live.
+   */
+  key: string;
+  totalHours: number;
+  reportCount: number;
 }

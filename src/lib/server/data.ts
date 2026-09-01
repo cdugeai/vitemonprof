@@ -1,3 +1,4 @@
+import { departementFromInsee, departementFromPostalCode } from '$lib/departements';
 import type { School } from '$lib/types/school';
 import { normalizeText } from '$lib/utils';
 import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre.csv?raw';
@@ -24,12 +25,25 @@ function parseCSV(content: string): School[] {
         return null;
       }
 
+      const postalCode = cells[headerMap.get('Adresse : code postal') ?? -1]?.trim() || '';
+      const insee =
+        cells[headerMap.get('Code INSEE du département ou de la collectivité') ?? -1]?.trim() || '';
+
       return {
         id: cells[headerMap.get("Numéro d'UAI") ?? -1]?.trim() || '',
         name: cells[headerMap.get('Appellation officielle') ?? -1]?.trim() || '',
         address: cells[headerMap.get('Adresse : désignation de la voie') ?? -1]?.trim() || '',
         city: cells[headerMap.get("Localité d'acheminement") ?? -1]?.trim() || '',
-        postalCode: cells[headerMap.get('Adresse : code postal') ?? -1]?.trim() || '',
+        postalCode,
+        // INSEE first, postal code only as a fallback. Measured over the whole
+        // 63,985-row file, the postal rule disagrees with the INSEE column on 84
+        // schools — and not randomly: `97150` is Saint-Martin and `97133` is
+        // Saint-Barthélemy despite sitting inside Guadeloupe's range, La
+        // Réunion's CEDEX codes run `978xx` which looks like Saint-Martin, and a
+        // handful of métropole codes straddle a border because the post office
+        // routes by delivery office rather than by département. The registry
+        // states the answer outright, so guessing it would be a choice.
+        departement: departementFromInsee(insee) ?? departementFromPostalCode(postalCode),
         latitude,
         longitude,
       };

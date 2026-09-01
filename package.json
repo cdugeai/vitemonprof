@@ -24,6 +24,7 @@
     "db:migrate:down": "node --env-file=.env scripts/migrate.ts down",
     "db:migrate:status": "node --env-file=.env scripts/migrate.ts status",
     "db:types": "node --env-file=.env scripts/gen-types.ts",
+    "db:backfill:departement": "node --env-file=.env scripts/backfill-departement.ts",
     "db:diff": "node --env-file=.env scripts/db-diff.ts",
     "db:migrate:duckdb": "node --env-file-if-exists=.env scripts/migrate.ts --duckdb"
   },

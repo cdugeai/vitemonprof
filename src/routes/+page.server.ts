@@ -5,6 +5,7 @@ import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import { isClassLevel } from '$lib/classLevels';
 import { checkRateLimit } from '$lib/server/rateLimit';
+import { getSchoolsInfo } from '$lib/server/data';
 
 /**
  * `YYYY-MM-DD` and a genuine calendar date — `2026-02-31` matches the shape but
@@ -101,7 +102,9 @@ export const actions = {
     }
 
     if (!isCalendarDate(String(date))) {
-      return fail(400, { error: 'Date must be valid, not in the future, and within the last year' });
+      return fail(400, {
+        error: 'Date must be valid, not in the future, and within the last year',
+      });
     }
 
     const hoursNum = parseInt(String(nbHours), 10);
@@ -112,8 +115,17 @@ export const actions = {
     // No id: `missed_hour.id` is a sequence now, so the store assigns it. The
     // action never needed to know it — it answers with a redirect, not with the
     // row — which is what made the client-generated UUID safe to drop.
+    // Resolved here, from the registry, rather than taken from the form. The
+    // client has no business asserting which département a school is in: it is a
+    // fact about the school, the server already knows it, and accepting it from
+    // a POST would let anyone file reports into a département of their choosing
+    // and skew the dashboard. Unknown school ids resolve to `null`, which every
+    // département-scoped query then excludes.
+    const school = getSchoolsInfo([String(schoolId)]).get(String(schoolId));
+
     await missedHourRepo.add({
       schoolId: String(schoolId),
+      departement: school?.departement ?? null,
       class: String(className),
       // The empty string is what a form sends for "nothing chosen"; the store only
       // speaks `null`, so the collapse happens here at the boundary.
