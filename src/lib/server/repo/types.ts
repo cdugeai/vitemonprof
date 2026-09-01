@@ -52,3 +52,50 @@ export interface MissedHourRepo {
 
 /** Rolling window for the "last 7 days" stat, shared so backends can't disagree. */
 export const STATS_WINDOW_DAYS = 7;
+
+/**
+ * What makes two reports descriptions of *the same missed hour*.
+ *
+ * A missed hour is one specific hour: **this class and group, at this school, on
+ * this day, in this subject, for this many hours**. `corroborations` counts how
+ * many reports land on that key. Every descriptive field the reporter fills in
+ * is part of it — the key is the whole report, minus the two fields the reporter
+ * does not choose (`createdAt`, and `departement`, which is derived from the
+ * school).
+ *
+ * The key is deliberately exact. A looser one would merge things that are not
+ * the same hour and report them as corroborating each other: school + class +
+ * date alone puts a maths hour and a sport hour on one morning in the same
+ * bucket, and leaving `classGroup` out does the same to « 6e A » and « 6e B »,
+ * which are different rooms of different pupils. Corroboration is the app's only
+ * evidence that an anonymous report is real, so overstating it is the expensive
+ * direction to be wrong in.
+ *
+ * The cost is that agreement now has to be total, and it is a high bar for
+ * anonymous reporters. Two people describing one cancelled hour who differ on
+ * the subject, the duration, or the group produce two events of one report each.
+ * A `null` is its own value throughout: two reports that both left the group
+ * blank corroborate, a blank one and a filled one do not — and both fields are
+ * optional on the form, which makes that the most common way a count stays at 1.
+ * The number understates agreement rather than inflating it.
+ *
+ * **This is now the same set of fields as `reportFingerprint` in
+ * `$lib/server/rateLimit`,** which refuses the exact same report twice from one
+ * IP inside two minutes. The two are independent by design and answer different
+ * questions — "is this the same hour?" against "is this a resubmission?" — but
+ * while they coincide, a corroboration cannot come from one address in that
+ * window. That is the intended reading of the badge: several *people*, not
+ * several clicks.
+ *
+ * Domain spelling here; `missedHourQueries.ts` holds the column spelling. The
+ * conformance suite is what keeps the two honest, by asserting the same counts
+ * against every backend.
+ */
+export const CORROBORATION_KEY = [
+  'schoolId',
+  'class',
+  'classGroup',
+  'date_',
+  'discipline',
+  'nbHours',
+] as const satisfies readonly (keyof NewMissedHour)[];

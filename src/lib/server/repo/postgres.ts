@@ -60,6 +60,9 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
           date_: String(r[LIST_ALIAS.date]),
           nbHours: Number(r[LIST_ALIAS.nbHours]),
           createdAt: new Date(Number(r[LIST_ALIAS.createdAtMs])).toISOString(),
+          // `count(*)` is a bigint/numeric on the wire in both engines, same as
+          // the stats aggregates — hence `Number` rather than a bare read.
+          corroborations: Number(r[LIST_ALIAS.corroborations]),
         } satisfies MissedHour;
       });
     },
