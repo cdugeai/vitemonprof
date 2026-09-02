@@ -1,6 +1,7 @@
 import { departementFromInsee, departementFromPostalCode } from '$lib/departements';
 import type { School } from '$lib/types/school';
 import { normalizeText } from '$lib/utils';
+import { isMaternelle } from './schoolKind';
 import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre.csv?raw';
 
 let cachedSchools: School[] | null = null;
@@ -25,13 +26,24 @@ function parseCSV(content: string): School[] {
         return null;
       }
 
+      const name = cells[headerMap.get('Appellation officielle') ?? -1]?.trim() || '';
+      const natureCode = cells[headerMap.get("Code nature de l'UAI") ?? -1]?.trim() || '';
+
+      // Maternelles are out of scope: this app is about missed *lessons*, and
+      // the children in a maternelle are too young for the question to mean the
+      // same thing. Dropped at the parse, so every consumer — the typeahead, the
+      // map, `/api/schools` — inherits it without having to remember.
+      if (isMaternelle({ natureCode, name })) {
+        return null;
+      }
+
       const postalCode = cells[headerMap.get('Adresse : code postal') ?? -1]?.trim() || '';
       const insee =
         cells[headerMap.get('Code INSEE du département ou de la collectivité') ?? -1]?.trim() || '';
 
       return {
         id: cells[headerMap.get("Numéro d'UAI") ?? -1]?.trim() || '',
-        name: cells[headerMap.get('Appellation officielle') ?? -1]?.trim() || '',
+        name,
         address: cells[headerMap.get('Adresse : désignation de la voie') ?? -1]?.trim() || '',
         city: cells[headerMap.get("Localité d'acheminement") ?? -1]?.trim() || '',
         postalCode,
