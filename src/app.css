@@ -177,3 +177,13 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 }
+
+/* Horizontal scrollers that must not gain a scrollbar's height — the navbar
+   tagline is one line tall and a visible bar would change the header's height
+   only on the platforms that reserve space for one. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
