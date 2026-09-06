@@ -32,7 +32,7 @@
   </main>
   <footer class="bg-gray-800 py-8 text-white">
     <div class="mx-auto max-w-7xl space-y-3 px-4 text-center">
-      <p>&copy; 2026 ViteMonProf. Suivre les heures manquées, améliorer l'éducation.</p>
+      <p>&copy; 2026 ViteMonProf — observatoire participatif des heures de cours non remplacées.</p>
       <nav class="text-sm text-gray-300">
         <a class="hover:text-white hover:underline" href={resolve('/mentions-legales')}>
           Mentions légales

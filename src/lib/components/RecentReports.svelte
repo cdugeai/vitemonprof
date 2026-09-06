@@ -133,8 +133,8 @@
 
 <Card.Root>
   <Card.Header>
-    <Card.Title>Rapports récents</Card.Title>
-    <Card.Description>Les derniers signalements enregistrés.</Card.Description>
+    <Card.Title>Signalements récents</Card.Title>
+    <Card.Description>Les dernières contributions enregistrées.</Card.Description>
   </Card.Header>
   <Card.Content>
     {#if is_loading}
@@ -159,7 +159,7 @@
         <span class="bg-muted text-muted-foreground rounded-full p-3">
           <Inbox class="size-5" />
         </span>
-        <p class="text-sm font-medium">Aucun rapport pour le moment</p>
+        <p class="text-sm font-medium">Aucun signalement pour le moment</p>
         <p class="text-muted-foreground text-sm">Les signalements envoyés apparaîtront ici.</p>
       </div>
     {:else}
@@ -233,14 +233,16 @@
                   <Badge
                     variant="outline"
                     class={corroborationTone(mh.corroborations)}
-                    title="{mh.corroborations} personnes ont signalé cette même heure manquée (même établissement, même classe, même jour)."
+                    title="{mh.corroborations} personnes ont signalé cette même heure. Des signalements concordants rendent l’information plus fiable, et l’heure n’est comptée qu’une fois dans les totaux."
                   >
                     <Users class="size-3" aria-hidden="true" />
                     Signalé {mh.corroborations} fois
                   </Badge>
                 {/if}
                 <span class="sr-only">
-                  {mh.nbHours} heure{mh.nbHours > 1 ? 's' : ''} manquée{mh.nbHours > 1 ? 's' : ''}
+                  {mh.nbHours} heure{mh.nbHours > 1 ? 's' : ''} non remplacée{mh.nbHours > 1
+                    ? 's'
+                    : ''}
                 </span>
               </div>
             </div>

@@ -74,11 +74,11 @@ test('a parent can report a missed class and see it appear in the recent list', 
 
   await page.getByRole('radio', { name: '3 heures' }).click();
 
-  const submit = page.getByRole('button', { name: /Envoyer le rapport/ });
+  const submit = page.getByRole('button', { name: /Envoyer le signalement/ });
   await expect(submit).toBeEnabled();
   await submit.click();
 
-  await expect(page.getByText('Rapport enregistré')).toBeVisible();
+  await expect(page.getByText("Merci, c'est enregistré")).toBeVisible();
 
   // The real assertion: the report came back *from the store* through `load`,
   // not from client state left over after the submit.
@@ -119,9 +119,9 @@ test('future dates are rejected', async ({ page }) => {
     }
   });
 
-  const submit = page.getByRole('button', { name: /Envoyer le rapport/ });
+  const submit = page.getByRole('button', { name: /Envoyer le signalement/ });
   await submit.click();
 
   // Should show an error about date bounds
-  await expect(page.getByText(/Date must be valid, not in the future, and within the last year/)).toBeVisible();
+  await expect(page.getByText(/La date doit être valide/)).toBeVisible();
 });

@@ -27,7 +27,7 @@ async function submitReport(page: Page, fields: ReportFields) {
       // A SvelteKit action answers a rejected submission with 200 and the
       // failure in the body, so the message is what carries the outcome.
       isDuplicate: text.includes('Vous avez déjà effectué ce signalement.'),
-      isRateLimited: text.includes('Too many requests'),
+      isRateLimited: text.includes('Trop de signalements'),
     };
   }, fields);
 }

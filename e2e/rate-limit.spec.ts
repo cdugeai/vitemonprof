@@ -22,25 +22,28 @@ test.describe('rate limiting', () => {
       formData.append('nbHours', '1');
 
       // Submit via fetch to check response status
-      const response = await page.evaluate(async (data) => {
-        const formData = new FormData();
-        formData.append('schoolId', data.schoolId);
-        formData.append('class', data.class);
-        formData.append('date', data.date);
-        formData.append('nbHours', data.nbHours);
+      const response = await page.evaluate(
+        async (data) => {
+          const formData = new FormData();
+          formData.append('schoolId', data.schoolId);
+          formData.append('class', data.class);
+          formData.append('date', data.date);
+          formData.append('nbHours', data.nbHours);
 
-        const res = await fetch('/', {
-          method: 'POST',
-          body: formData,
-          redirect: 'manual'
-        });
+          const res = await fetch('/', {
+            method: 'POST',
+            body: formData,
+            redirect: 'manual',
+          });
 
-        const text = await res.text();
-        return {
-          status: res.status,
-          isRateLimited: text.includes('Too many')
-        };
-      }, { schoolId: `test-school-${i}`, class: '6e', date: '2026-08-20', nbHours: '1' });
+          const text = await res.text();
+          return {
+            status: res.status,
+            isRateLimited: text.includes('Trop de signalements'),
+          };
+        },
+        { schoolId: `test-school-${i}`, class: '6e', date: '2026-08-20', nbHours: '1' }
+      );
 
       expect(response.status).toBe(200);
       expect(response.isRateLimited).toBe(false);
@@ -62,7 +65,7 @@ test.describe('rate limiting', () => {
         await fetch('/', {
           method: 'POST',
           body: formData,
-          redirect: 'manual'
+          redirect: 'manual',
         });
       }, i);
     }
@@ -78,14 +81,14 @@ test.describe('rate limiting', () => {
       const res = await fetch('/', {
         method: 'POST',
         body: formData,
-        redirect: 'manual'
+        redirect: 'manual',
       });
 
       const text = await res.text();
       return {
         status: res.status,
-        isRateLimited: text.includes('Too many'),
-        hasErrorMessage: text.includes('Maximum 5 submissions per minute')
+        isRateLimited: text.includes('Trop de signalements'),
+        hasErrorMessage: text.includes('patienter une minute'),
       };
     });
 
@@ -109,7 +112,7 @@ test.describe('rate limiting', () => {
         await fetch('/', {
           method: 'POST',
           body: formData,
-          redirect: 'manual'
+          redirect: 'manual',
         });
       }, i);
     }
@@ -125,17 +128,17 @@ test.describe('rate limiting', () => {
       const res = await fetch('/', {
         method: 'POST',
         body: formData,
-        redirect: 'manual'
+        redirect: 'manual',
       });
 
       const text = await res.text();
       // Look for the error message in the response
-      if (text.includes('Too many requests')) {
-        return 'Too many requests. Maximum 5 submissions per minute.';
+      if (text.includes('Trop de signalements')) {
+        return 'Trop de signalements coup sur coup. Merci de patienter une minute.';
       }
       return null;
     });
 
-    expect(errorMessage).toBe('Too many requests. Maximum 5 submissions per minute.');
+    expect(errorMessage).toBe('Trop de signalements coup sur coup. Merci de patienter une minute.');
   });
 });

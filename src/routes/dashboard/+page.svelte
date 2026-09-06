@@ -76,7 +76,9 @@
   }
 
   let heading = $derived(
-    data.dimension === 'school' ? 'Établissements les plus touchés' : 'Matières les plus touchées'
+    data.dimension === 'school'
+      ? 'Établissements les plus concernés'
+      : 'Matières les plus concernées'
   );
 
   let scope = $derived(
@@ -102,7 +104,10 @@
 
 <div class="mx-auto max-w-4xl px-4 py-8">
   <h1 class="mb-2 text-3xl font-bold">Tableau de bord</h1>
-  <p class="text-muted-foreground mb-8">Les heures manquées les plus signalées, par département.</p>
+  <p class="text-muted-foreground mb-8">
+    Les heures non remplacées les plus signalées, par département. Chaque créneau est compté une
+    seule fois, quel que soit le nombre de contributeurs.
+  </p>
 
   <div class="mb-6 grid gap-4 sm:grid-cols-2">
     <div class="flex flex-col gap-2">
@@ -200,8 +205,8 @@
             <p class="text-sm font-medium">Aucun signalement ici pour le moment</p>
             <p class="text-muted-foreground text-sm">
               {data.departement
-                ? 'Aucune heure manquée n’a encore été signalée dans ce département.'
-                : 'Aucune heure manquée n’a encore été signalée.'}
+                ? 'Aucune heure non remplacée n’a encore été signalée dans ce département.'
+                : 'Aucune heure non remplacée n’a encore été signalée.'}
             </p>
           </div>
         {:else}

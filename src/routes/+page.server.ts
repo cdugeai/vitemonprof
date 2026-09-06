@@ -19,13 +19,15 @@ export const load: PageServerLoad = () => {
 export const actions = {
   default: async ({ request, getClientAddress }) => {
     if (request.method !== 'POST') {
-      return fail(405, { error: 'Method not allowed' });
+      return fail(405, { error: 'Méthode non autorisée.' });
     }
 
     // Rate limit: max 5 requests per minute per IP
     const clientIp = getClientAddress();
     if (!checkRateLimit(clientIp)) {
-      return fail(429, { error: 'Too many requests. Maximum 5 submissions per minute.' });
+      return fail(429, {
+        error: 'Trop de signalements coup sur coup. Merci de patienter une minute.',
+      });
     }
 
     const formData = await request.formData();
@@ -39,41 +41,41 @@ export const actions = {
 
     // Validation
     if (!schoolId) {
-      return fail(400, { error: 'School is required' });
+      return fail(400, { error: 'Veuillez choisir un établissement.' });
     }
 
     if (!className) {
-      return fail(400, { error: 'Class is required' });
+      return fail(400, { error: 'Veuillez choisir une classe.' });
     }
 
     if (!isClassLevel(String(className))) {
-      return fail(400, { error: 'Unknown class' });
+      return fail(400, { error: 'Cette classe n’est pas reconnue.' });
     }
 
     if (classGroup && !isClassGroup(String(classGroup))) {
-      return fail(400, { error: 'Class group must be one of A-G (or 1-7)' });
+      return fail(400, { error: 'Le groupe doit être compris entre A et G (ou entre 1 et 7).' });
     }
 
     // Optional like the group, and rejected the same way when present but bogus:
     // an id that is not in the mapping cannot be rendered back to a label, so
     // storing it would put a permanently unreadable row in the table.
     if (discipline && !isDiscipline(String(discipline))) {
-      return fail(400, { error: 'Unknown discipline' });
+      return fail(400, { error: 'Cette matière n’est pas reconnue.' });
     }
 
     if (!date) {
-      return fail(400, { error: 'Date is required' });
+      return fail(400, { error: 'Veuillez indiquer la date du cours.' });
     }
 
     if (!isReportableDate(String(date))) {
       return fail(400, {
-        error: 'Date must be valid, not in the future, and within the last year',
+        error: 'La date doit être valide, ne pas être dans le futur et dater de moins d’un an.',
       });
     }
 
     const hoursNum = parseInt(String(nbHours), 10);
     if (isNaN(hoursNum) || hoursNum < 1 || hoursNum > 4) {
-      return fail(400, { error: 'Hours must be between 1 and 4' });
+      return fail(400, { error: 'Le nombre d’heures doit être compris entre 1 et 4.' });
     }
 
     // Everything above has been validated, which is why the duplicate check
