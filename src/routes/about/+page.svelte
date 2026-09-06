@@ -27,6 +27,23 @@
       </section>
 
       <section>
+        <h2 class="mb-4 text-2xl font-bold">Accéder aux données</h2>
+        <p class="text-gray-700">
+          Toutes les données des soumissions sont en accès libre, exportées quotidiennement sur <a
+            href="https://www.data.gouv.fr"
+            class="text-blue-600 underline"
+            target="_blank">data.gouv.fr</a
+          >
+          dans le jeu de données
+          <a
+            href="https://www.data.gouv.fr/datasets/vitemonprof-soumissions"
+            target="_blank"
+            class="text-blue-600 underline">ViteMonProf - Soumissions</a
+          >.
+        </p>
+      </section>
+
+      <section>
         <h2 class="mb-4 text-2xl font-bold">Ce que l'observatoire compte</h2>
         <p class="text-gray-700">
           Une unité : l'heure de cours non remplacée. Chaque signalement précise l'établissement, la
