@@ -4,7 +4,7 @@ test('the page renders the report form and the recent-reports panel', async ({ p
   await page.goto('/');
 
   await expect(
-    page.getByRole('heading', { name: /heures de cours ne sont pas remplacées/i })
+    page.getByRole('heading', { name: /suivi des absences de courte durée/i })
   ).toBeVisible();
   await expect(page.getByText('Signaler une heure non remplacée')).toBeVisible();
   await expect(page.getByText('Signalements récents')).toBeVisible();
