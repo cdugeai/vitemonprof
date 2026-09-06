@@ -1,0 +1,61 @@
+# Publishes yesterday's submissions to data.gouv.fr, once a night.
+#
+# The dataset (`vitemonprof-soumissions`) is declared `daily` on the platform, so
+# this is the job that makes that declaration true. It runs `npm run db:publish`,
+# which exports one UTC day of `missed_hour` to a day-stamped CSV and attaches it
+# to the dataset as a resource of type "Mise à jour".
+name: Publish daily export to data.gouv.fr
+
+on:
+  schedule:
+    # 02:00 **UTC** — GitHub's cron has no timezone and never observes DST, so
+    # this is the one field here that cannot be written in Paris time. It does not
+    # need to be: the export covers the previous *UTC* day (see `exportDay.ts`),
+    # and any hour after 00:00 UTC is a day that has already closed. Two o'clock
+    # leaves room for the run to be queued late — scheduled workflows are
+    # best-effort on shared runners and routinely start several minutes behind —
+    # without ever drifting back across the boundary into exporting a day twice.
+    - cron: '0 2 * * *'
+  # So a night that failed can be repaired without waiting for the next one.
+  # Re-running a day replaces its resource rather than adding a second one, so
+  # this is safe to press more than once.
+  workflow_dispatch:
+
+# One publish at a time: a manual dispatch fired while the nightly run is still
+# going would otherwise have both processes racing to create the same resource,
+# each having looked it up before the other created it. `cancel-in-progress` is
+# deliberately off — the running job may already be mid-upload.
+concurrency:
+  group: publish-datagouv
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci`, not `npm ci --omit=dev`: `pg` and `csv-writer` are dev
+      # dependencies (nothing the deployed app serves needs them), and the export
+      # is exactly the script that does.
+      #
+      # Note this installs without downloading the 27 MB school registry —
+      # `data:schools` hangs off `predev`/`prebuild`, and this job runs neither.
+      - run: npm ci
+
+      - name: Export yesterday and publish it
+        run: npm run db:publish
+        env:
+          # The production database. Print-safe: the script logs the host and
+          # database name only, never the connection string.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # A data.gouv.fr API key for an account that can edit the dataset —
+          # https://www.data.gouv.fr/admin/me/ → "Clé d'API".
+          DATAGOUV_API_KEY: ${{ secrets.DATAGOUV_API_KEY }}

@@ -28,6 +28,7 @@
     "db:diff": "node --env-file=.env scripts/db-diff.ts",
     "db:export:hours": "node --env-file=.env scripts/export-missed-hour.ts",
     "db:export:events": "node --env-file=.env scripts/export-missed-hour-events.ts",
+    "db:publish": "node --env-file-if-exists=.env scripts/publish-missed-hour.ts",
     "db:migrate:duckdb": "node --env-file-if-exists=.env scripts/migrate.ts --duckdb"
   },
   "engines": {

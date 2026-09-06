@@ -21,6 +21,27 @@ export interface ExportOptions {
   readonly createdColumn: string;
   /** Filename stem; the day and `.csv` are appended. */
   readonly filePrefix: string;
+  /**
+   * The arguments to parse, defaulting to this process's own.
+   *
+   * Overridable because `publish-missed-hour.ts` is not only a wrapper: it has a
+   * flag of its own (`--dry-run`), and `parseArgs` rightly rejects options it
+   * does not know. So the publisher forwards what is left after removing its
+   * own — which also means `--day` reaches this parser through it, and a day
+   * that failed can be re-published without editing anything.
+   */
+  readonly argv?: readonly string[];
+}
+
+/**
+ * What the export produced. Returned rather than only logged because the
+ * publishing script needs all three: the path to hand to data.gouv.fr, the day
+ * to describe the resource with, and the count to report.
+ */
+export interface ExportResult {
+  readonly outputPath: string;
+  readonly rowCount: number;
+  readonly day: ExportDay;
 }
 
 /**
@@ -65,8 +86,9 @@ export async function exportPreviousDay({
   table,
   createdColumn,
   filePrefix,
-}: ExportOptions): Promise<void> {
-  const { day, outputPath } = parseArgs(process.argv.slice(2));
+  argv = process.argv.slice(2),
+}: ExportOptions): Promise<ExportResult> {
+  const { day, outputPath } = parseArgs(argv);
   const path = outputPath ?? `exports/${filePrefix}-${day.stamp}.csv`;
 
   const connectionString = process.env.DATABASE_URL;
@@ -128,6 +150,8 @@ export async function exportPreviousDay({
     if (rows.length === 0) {
       console.log(`(no ${table} rows with ${createdColumn} on ${day.iso})`);
     }
+
+    return { outputPath: path, rowCount: rows.length, day };
   } finally {
     await client.end();
   }

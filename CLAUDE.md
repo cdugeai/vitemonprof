@@ -268,6 +268,65 @@ belongs in the 6th's file. That is what puts every row in exactly one day's
 export; grouping by `date` instead would move rows between already-published
 files every time someone reports an older class.
 
+## The nightly publication to data.gouv.fr
+
+`npm run db:publish` is that downstream job. It exports yesterday's `missed_hour`
+rows and attaches the CSV to the
+[`vitemonprof-soumissions`](https://www.data.gouv.fr/datasets/vitemonprof-soumissions)
+dataset as a resource of type **"Mise à jour"**.
+`.github/workflows/publish-datagouv.yml` runs it at **02:00 UTC** every day, and
+can be dispatched by hand to repair a night that failed.
+
+It needs two secrets: `DATABASE_URL` (production Postgres) and
+`DATAGOUV_API_KEY`. Two env vars are optional and only there to rehearse:
+`DATAGOUV_DATASET` (defaults to the dataset's UUID — a UUID rather than the slug,
+which a rename would break silently) and `DATAGOUV_API_URL` (point it at
+`https://demo.data.gouv.fr/api/1`). `npm run db:publish -- --dry-run` writes the
+CSV and stops before the network.
+
+`--day` reaches the exporter through the publisher, so
+`npm run db:publish -- --day 2026-09-01` re-publishes a named day — the repair
+for a night the job did not run at all, where a re-dispatch would only get
+yesterday. The publisher forwards everything except its own `--dry-run`, which
+it has to filter out rather than pass on: `parseArgs` rejects unknown options,
+and that is exactly what makes a mistyped `--day` fail instead of quietly
+exporting yesterday.
+
+**It publishes `missed_hour`, not `missed_hour_event`.** The raw submissions are
+what the dataset page describes and what a reuser can re-aggregate; the view is
+_our_ reading of them, and publishing a reading in place of the data makes the
+dataset harder to check rather than easier.
+
+**Re-running a day replaces it.** Scheduled jobs get re-run — a retry, a manual
+dispatch after an outage — and the naive version would leave two resources named
+`missed-hour-20260914.csv` with no way to tell which is current. So
+`scripts/lib/datagouv.ts` looks the resource up by title first and, if it is
+there, overwrites the _file_ behind it (`POST …/resources/{rid}/upload/`) instead
+of creating a sibling. The resource keeps its id, so `/datasets/r/{id}` links
+stay valid, and the whole script is idempotent per day.
+
+### Two calls, and the order inside the second one
+
+Neither upload endpoint accepts a `type`, so classifying the resource is a second
+request: upload the file, then `PUT …/resources/{rid}/` to set
+`type: "update"`. That PUT declares five required fields
+(`title`, `type`, `format`, `filetype`, `url`), so the payload is built by
+echoing the upload's own response back with the overrides applied **after** the
+echo.
+
+That ordering is the whole game. The upload answers `type: "main"` — the
+platform's default — so seeding the payload with `update` and then copying the
+response over it puts `main` back, and the API returns 200. Nothing fails: the
+resource is published, on the right dataset, under the right name, filed under
+the wrong type. `scripts/lib/datagouv.spec.ts` pins it, along with the
+create-vs-replace branch and the multipart filename, by running the real client
+against a local stub that answers with the real status codes — which is also why
+the Vitest `server` project globs `{src,scripts}` and not just `src`.
+
+`update` is an id from a closed vocabulary (`GET /datasets/resource_types/`:
+`main`, `documentation`, `update`, `api`, `code`, `other`). "Mise à jour" is that
+endpoint's French label for it; the API only ever accepts the id.
+
 ## Migrations
 
 Schema changes are versioned Kysely migrations in `migrations/`, applied by a
