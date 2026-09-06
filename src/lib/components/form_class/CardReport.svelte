@@ -142,7 +142,7 @@
           <PresenterSchool school={selectedSchool} />
         </Tabs.Content>
         <div class="flex flex-col gap-2">
-          <SelectorClass bind:selectedClass />
+          <SelectorClass bind:selectedClass schoolName={selectedSchool?.name} />
           <SelectorClassGroup bind:selectedClassGroup />
           <SelectorDiscipline bind:selectedDiscipline />
           <DatePicker bind:date_={selectedDate} />

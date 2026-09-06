@@ -51,12 +51,14 @@ test('a parent can report a missed class and see it appear in the recent list', 
     page,
     'Établissement',
     'Rechercher',
-    'Georges Brassens',
-    /Georges Brassens/
+    'Collège Georges Brassens',
+    /Collège Georges Brassens/
   );
 
-  await page.getByRole('button', { name: 'Classe' }).click();
-  await page.getByRole('option', { name: '1ère', exact: true }).click();
+  // A collège, so the dropdown offers the four collège levels and nothing else —
+  // see the cycle test below.
+  await page.locator('#sel-class').click();
+  await page.getByRole('option', { name: '3e', exact: true }).click();
 
   await page.getByRole('radio', { name: 'Groupe C, ou 3' }).click();
 
@@ -84,7 +86,7 @@ test('a parent can report a missed class and see it appear in the recent list', 
   // not from client state left over after the submit.
   const report = page.getByRole('listitem').filter({ hasText: 'Georges Brassens' });
   await expect(report).toBeVisible();
-  await expect(report).toContainText('1ère C');
+  await expect(report).toContainText('3e C');
   await expect(report).toContainText('Mathématiques');
   await expect(report).toContainText('3h');
 });
@@ -96,12 +98,12 @@ test('future dates are rejected', async ({ page }) => {
     page,
     'Établissement',
     'Rechercher',
-    'Georges Brassens',
-    /Georges Brassens/
+    'Collège Georges Brassens',
+    /Collège Georges Brassens/
   );
 
-  await page.getByRole('button', { name: 'Classe' }).click();
-  await page.getByRole('option', { name: '1ère', exact: true }).click();
+  await page.locator('#sel-class').click();
+  await page.getByRole('option', { name: '3e', exact: true }).click();
 
   // Select today's date (calendar picker allows it)
   await page.getByRole('button', { name: 'Date' }).click();
@@ -124,4 +126,43 @@ test('future dates are rejected', async ({ page }) => {
 
   // Should show an error about date bounds
   await expect(page.getByText(/La date doit être valide/)).toBeVisible();
+});
+
+test('the class dropdown follows the school that was picked', async ({ page }) => {
+  await page.goto('/');
+
+  // Located by id, not by accessible name: the trigger's text *is* the current
+  // selection, so a name-based locator would stop matching the moment a class is
+  // chosen.
+  const classTrigger = page.locator('#sel-class');
+  const cm2 = page.getByRole('option', { name: 'CM2', exact: true });
+  const premiere = page.getByRole('option', { name: '1ère', exact: true });
+
+  // No school yet, so nothing to infer from: every cycle is on offer. The retry
+  // waits out hydration, exactly as `pickFromSearchableSelect` does.
+  await expect(async () => {
+    await classTrigger.click();
+    await expect(cm2).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
+  await expect(premiere).toBeVisible();
+
+  await cm2.click();
+  await expect(classTrigger).toHaveText('CM2');
+
+  await pickFromSearchableSelect(
+    page,
+    'Établissement',
+    'Rechercher',
+    'Collège Georges Brassens',
+    /Collège Georges Brassens/
+  );
+
+  // A collège has no CM2, so the pick can't stand — the form goes back to asking
+  // for a class rather than quietly posting one the school cannot have.
+  await expect(classTrigger).toHaveText('Sélectionner une classe');
+
+  await classTrigger.click();
+  await expect(page.getByRole('option', { name: '3e', exact: true })).toBeVisible();
+  await expect(cm2).toHaveCount(0);
+  await expect(premiere).toHaveCount(0);
 });
