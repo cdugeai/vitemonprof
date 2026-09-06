@@ -2,9 +2,9 @@
   import * as Card from '$lib/components/ui/card';
   import type { School } from '$lib/types/school';
   import RecentReports from '$lib/components/RecentReports.svelte';
-  import type { PageProps } from './$types';
+  import type { PageProps, SubmitFunction } from './$types';
   import { canSubmitForm } from '$lib/utils_form';
-  import { enhance } from '$app/forms';
+  import { applyAction, enhance } from '$app/forms';
   import CardReport from '$lib/components/form_class/CardReport.svelte';
   import { CalendarDate } from '@internationalized/date';
   import { dateToISO, dateToStr } from '$lib/utils';
@@ -12,6 +12,8 @@
   import CircleCheck from '@lucide/svelte/icons/circle-check';
   import CircleAlert from '@lucide/svelte/icons/circle-alert';
   import { page } from '$app/state';
+  import { invalidateAll } from '$app/navigation';
+  import { toast } from 'svelte-sonner';
   import type { ClassGroup } from '$lib/classGroups';
   import type { ClassLevel } from '$lib/classLevels';
   import type { Discipline } from '$lib/disciplines';
@@ -25,24 +27,60 @@
 
   let { data, form }: PageProps = $props();
 
-  // True from the moment the form is submitted until the redirect has been followed and
-  // the page data re-fetched. Guards against the double-submit you'd otherwise get by
-  // tapping "Envoyer" twice while the request is in flight.
+  // True from the moment the form is submitted until the result has been applied and the
+  // page data re-fetched. Guards against the double-submit you'd otherwise get by tapping
+  // "Envoyer" twice while the request is in flight.
   let submitting = $state(false);
 
-  // The action redirects to `/?submitted`, so the URL is what carries the confirmation
-  // across the redirect — it survives with or without JS, unlike the `form` prop, which a
-  // redirect discards.
-  //
-  // Seeded into `$state` rather than `$derived` straight off the URL because the flag has
-  // to be *dismissable*: a failed re-submit leaves the URL untouched, so a derived flag
-  // would leave "Rapport enregistré" sitting next to the new error. The `use:enhance`
-  // callback clears it when a fresh attempt starts.
-  let showSuccess = $state(false);
+  // `?submitted` is the confirmation for browsers that follow the action's 303 for real —
+  // that is, browsers without JS. `use:enhance` recognises the success itself and never
+  // follows the redirect, so with JS this is always false and the toast is what confirms.
+  let noJsConfirmation = $derived(page.url.searchParams.has('submitted'));
 
-  $effect(() => {
-    if (page.url.searchParams.has('submitted')) showSuccess = true;
-  });
+  // Pulled out of the template and typed with the generated `SubmitFunction`: that is
+  // what makes `result.data.error` a `string` rather than `unknown`, because the failure
+  // shape is inferred from the action's own `fail()` calls.
+  const handleSubmit: SubmitFunction = () => {
+    submitting = true;
+    return async ({ result, update }) => {
+      if (result.type === 'redirect') {
+        // The 303 *is* the success signal, so the toast comes straight off the result
+        // — no flag round-tripping through the URL. And we deliberately don't follow
+        // the redirect: `use:enhance` sent this with fetch, so there is no POST
+        // history entry for Post/Redirect/Get to repair, and following it would drag
+        // `?submitted` into the address bar for no reason. All the redirect was
+        // buying us here is a fresh `load`, which `invalidateAll` does on its own.
+        toast.success("Merci, c'est enregistré", {
+          // Terser than the alert below: a toast is read in passing, and the list it
+          // points at is right there on the page.
+          description: 'Votre signalement apparaît dès maintenant dans les signalements récents.',
+        });
+        // Retires a failure left over from a submit made *before* hydration, which is
+        // the one way `form` can be set while JS is running. `form` only resets on
+        // navigation, and not navigating is the whole point above — without this, the
+        // red alert would sit there under a green toast saying the opposite.
+        await applyAction({ type: 'success', status: 200, data: undefined });
+        await invalidateAll();
+      } else if (result.type === 'failure') {
+        // Same shape as the success case: the result carries the message, so nothing
+        // has to be applied to the page to display it. Not calling `update()` here is
+        // deliberate — it would set the `form` prop, and the alert below would then
+        // say the same thing a second time, in a second place.
+        toast.error("Le signalement n'a pas pu être envoyé", {
+          description: result.data?.error ?? 'Merci de réessayer dans un instant.',
+          // Longer than the success toast: this one asks the reader to do something
+          // about it, and "vous avez déjà effectué ce signalement" takes two lines.
+          duration: 8000,
+        });
+      } else {
+        // `type: 'error'` — the action threw. Only `update()` knows how to put the
+        // nearest +error.svelte on screen, and a toast would be the wrong shape for it
+        // anyway: the page is no longer trustworthy, so it has to be replaced.
+        await update();
+      }
+      submitting = false;
+    };
+  };
 
   // Client-side guardrail: reuses FormHint's rules so the button and the hint
   // can never disagree. This only improves UX — the server action stays the real
@@ -85,21 +123,10 @@
     <!--
       `use:enhance` intercepts the submit and sends it with fetch instead of navigating, so
       no POST ever lands in the browser's history. The server's 303 is still what makes a
-      hard refresh safe for anyone without JS — the two fixes cover different paths.
-      `update()` applies the result: for a redirect it navigates and re-runs `load`, which
-      is what refreshes the stats and the "rapports récents" list below.
+      hard refresh safe for anyone without JS — the two fixes cover different paths, and
+      `handleSubmit` above is where the enhanced one is spelled out.
     -->
-    <form
-      method="POST"
-      use:enhance={() => {
-        submitting = true;
-        showSuccess = false; // a new attempt retires the previous confirmation
-        return async ({ update }) => {
-          await update();
-          submitting = false;
-        };
-      }}
-    >
+    <form method="POST" use:enhance={handleSubmit}>
       <CardReport
         bind:selectedClass
         bind:selectedClassGroup
@@ -111,12 +138,17 @@
         {submitting}
       />
       <!--
+        The no-JS confirmation. Sonner needs JS, so without it the toast never fires and
+        the redirect would land on a page that looks unchanged. Only a browser that
+        followed the 303 for real ever has `?submitted` in its URL, so this and the toast
+        can't both appear: one confirmation either way, never two.
+
         `Alert.Root` already renders `role="alert"`, so screen readers announce these the
         moment they appear — no extra ARIA needed. The success case has no `variant` of its
         own in shadcn-svelte (only `default` and `destructive`), so it borrows the app's
         green via utility classes rather than a new variant.
       -->
-      {#if showSuccess}
+      {#if noJsConfirmation}
         <Alert.Root class="mt-4 border-green-600/30 bg-green-50 text-green-900">
           <CircleCheck class="text-green-600" />
           <Alert.Title>Merci, c'est enregistré</Alert.Title>
@@ -127,6 +159,13 @@
         </Alert.Root>
       {/if}
 
+      <!--
+        The other half of the no-JS story. `form` is set by the server when it renders a
+        rejected submission, and by nothing else here: the enhanced path answers a failure
+        with a toast and deliberately skips `update()`. So this is what a browser without
+        JS sees — and what a browser *with* JS sees for the one submit that can beat
+        hydration to the punch.
+      -->
       {#if form?.error}
         <Alert.Root variant="destructive" class="mt-4">
           <CircleAlert />
