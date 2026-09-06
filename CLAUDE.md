@@ -106,6 +106,38 @@ alone: Post/Redirect/Get needs a redirect the browser actually follows, so
 "accepted" has two codes and they say which kind of client reported.
 `e2e/submission-status.spec.ts` pins all six.
 
+## Page metadata lives in one component
+
+Every page renders exactly one `<Seo />` (`src/lib/components/Seo.svelte`) instead
+of hand-writing `<svelte:head>`. Defaults — site name, description, the Open Graph
+image and its dimensions — are in `src/lib/seo.ts`; a page passes only its own
+`title`, an optional `description`, and `noindex` where it applies.
+
+One component rather than tags in `+layout.svelte`, because **Svelte does not dedupe
+`<svelte:head>`**: a default `og:title` in the layout plus a real one on the page
+emits both, and which one a crawler believes is anyone's guess.
+
+Two things the tags depend on:
+
+- **The URLs are absolute, built from `page.url`.** Open Graph resolves nothing
+  relative — a bare `/og-image.jpg` is dropped and the card renders imageless.
+  Deriving the origin from the request rather than hardcoding a domain is what
+  makes dev, preview and production all correct with no env var to keep in sync.
+  `og:url` and the canonical drop query and hash, so `?submitted=1` does not split
+  the signal.
+- **The image is in `static/`, not imported through Vite.** An imported asset gets
+  a content hash in its URL, and social crawlers cache hard by URL; a stable path
+  means a preview already scraped keeps working across deploys. It is 1200×630 —
+  the 1.91:1 that Facebook, LinkedIn and X render without re-cropping — and the
+  dimensions are declared as tags so the _first_ scrape lays out a large card
+  instead of falling back to the small square one.
+
+`e2e/seo.spec.ts` asserts all of it against the **served HTML**, not the DOM. A
+crawler never runs JavaScript, so a tag that only appears after hydration is a tag
+nobody sees — and a DOM-reading assertion would pass on it anyway. It also reads
+the JPEG's real dimensions back out of the response, because the file can be
+replaced without anyone touching `seo.ts`.
+
 ## Maplibre GL
 
 Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.

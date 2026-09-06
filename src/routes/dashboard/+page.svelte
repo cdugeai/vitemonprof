@@ -9,6 +9,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
+  import Seo from '$lib/components/Seo.svelte';
   import ChartNoAxesColumn from '@lucide/svelte/icons/chart-no-axes-column';
   import type { PageProps } from './$types';
 
@@ -98,9 +99,10 @@
   }
 </script>
 
-<svelte:head>
-  <title>Tableau de bord — ViteMonProf</title>
-</svelte:head>
+<Seo
+  title="Tableau de bord"
+  description="Les heures de cours non remplacées les plus signalées, département par département. Chaque créneau est compté une seule fois."
+/>
 
 <div class="mx-auto max-w-4xl px-4 py-8">
   <h1 class="mb-2 text-3xl font-bold">Tableau de bord</h1>

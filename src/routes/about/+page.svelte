@@ -1,11 +1,13 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
+  import Seo from '$lib/components/Seo.svelte';
   import { Button } from '$lib/components/ui/button';
 </script>
 
-<svelte:head>
-  <title>À propos — ViteMonProf</title>
-</svelte:head>
+<Seo
+  title="À propos"
+  description="Ce que compte ViteMonProf, comment les signalements sont dédoublonnés et corroborés, et ce que deviennent les données de l'observatoire."
+/>
 
 <div class="mx-auto max-w-4xl px-4 py-12">
   <h1 class="mb-8 text-4xl font-bold">À propos de ViteMonProf</h1>
