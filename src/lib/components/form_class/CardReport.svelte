@@ -16,7 +16,7 @@
   import SelectorDiscipline from './SelectorDiscipline.svelte';
   import SelectorSchool from './SelectorSchool.svelte';
   import DatePicker from '../DatePicker.svelte';
-  import PresenterSchool from './PresenterSchool.svelte';
+  import SelectedSchoolField from './SelectedSchoolField.svelte';
   import type { School } from '$lib/types/school';
   import type { ClassGroup } from '$lib/classGroups';
   import type { Discipline } from '$lib/disciplines';
@@ -139,7 +139,7 @@
               {/await}
             {/if}
           </div>
-          <PresenterSchool school={selectedSchool} />
+          <SelectedSchoolField bind:selectedSchool />
         </Tabs.Content>
         <div class="flex flex-col gap-2">
           <SelectorClass bind:selectedClass schoolName={selectedSchool?.name} />
