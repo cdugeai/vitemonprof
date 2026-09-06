@@ -9,13 +9,20 @@
   import Inbox from '@lucide/svelte/icons/inbox';
   import Users from '@lucide/svelte/icons/users';
   import { fetchGzipJson } from '$lib/gzip-json';
+  import { cn } from '$lib/utils';
 
   interface Props {
     missed_hours: MissedHour[];
     is_loading: boolean;
+    /**
+     * Merged onto `Card.Root` — the standard shadcn-svelte escape hatch, so the
+     * *page* decides how tall this panel is and the component stays agnostic.
+     * Pass a height (`h-full`) and the list below scrolls instead of growing.
+     */
+    class?: string;
   }
 
-  let { missed_hours, is_loading }: Props = $props();
+  let { missed_hours, is_loading, class: className }: Props = $props();
   const LAST_TO_DISPLAY = 5;
   const SKELETON_ROWS = 3;
   let missed_hours_to_display = $derived(missed_hours.slice(0, LAST_TO_DISPLAY));
@@ -131,12 +138,24 @@
   }
 </script>
 
-<Card.Root>
+<Card.Root class={cn(className)}>
   <Card.Header>
     <Card.Title>Signalements récents</Card.Title>
     <Card.Description>Les dernières contributions enregistrées.</Card.Description>
   </Card.Header>
-  <Card.Content>
+  <!--
+    `min-h-0` is the load-bearing half of the pair. Every flex item carries an
+    implicit `min-height: auto` meaning "never get shorter than my own content",
+    so `flex-1` says "be 360px" and `min-height` overrules it with "be at least
+    472px" — the card simply grows and `overflow-y-auto` never fires, because
+    from the browser's point of view nothing overflowed. `min-h-0` removes that
+    floor, and only then is there real overflow to scroll.
+
+    Both are no-ops until something actually constrains the card's height, which
+    is why they can live here unconditionally: with `Card.Root` at its natural
+    height there is no leftover space to fight over and no overflow to scroll.
+  -->
+  <Card.Content class="min-h-0 flex-1 overflow-y-auto">
     {#if is_loading}
       <!--
         Skeleton rows rather than a centred "Chargement…". They hold the same shape
