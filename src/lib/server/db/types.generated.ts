@@ -9,6 +9,8 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface MissedHour {
@@ -23,6 +25,20 @@ export interface MissedHour {
   school_id: string;
 }
 
+export interface MissedHourEvent {
+  class: string | null;
+  class_group: string | null;
+  date: Timestamp | null;
+  departement: string | null;
+  discipline: string | null;
+  first_reported_at: Timestamp | null;
+  last_reported_at: Timestamp | null;
+  nb_hours: number | null;
+  school_id: string | null;
+  submissions: Int8 | null;
+}
+
 export interface DB {
   missed_hour: MissedHour;
+  missed_hour_event: MissedHourEvent;
 }

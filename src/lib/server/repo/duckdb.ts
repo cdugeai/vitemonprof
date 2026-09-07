@@ -100,7 +100,8 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
             // Both aggregates arrive as bigint here rather than as strings; the
             // `Number` is the same narrowing `list()` does for `created_at_ms`.
             totalHours: Number(r[TOP_ALIAS.totalHours]),
-            reportCount: Number(r[TOP_ALIAS.reportCount]),
+            events: Number(r[TOP_ALIAS.events]),
+            submissions: Number(r[TOP_ALIAS.submissions]),
           }) satisfies TopMissedHours
       );
     },

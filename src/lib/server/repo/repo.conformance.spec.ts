@@ -4,7 +4,7 @@ import { migrateDuckDb } from '$lib/server/db/duckdbMigrate';
 import type { NewMissedHour } from '$lib/types/missedHours';
 import { createMemoryMissedHourRepo } from './memory';
 import { createDuckDbMissedHourRepo } from './duckdb';
-import { STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
+import { CORROBORATION_KEY, STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
 
 /**
  * One suite, every backend.
@@ -335,20 +335,20 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
 
       expect(top).toEqual([
-        { key: 'B', totalHours: 4, reportCount: 1 },
-        { key: 'C', totalHours: 2, reportCount: 1 },
-        { key: 'A', totalHours: 1, reportCount: 1 },
+        { key: 'B', totalHours: 4, events: 1, submissions: 1 },
+        { key: 'C', totalHours: 2, events: 1, submissions: 1 },
+        { key: 'A', totalHours: 1, events: 1, submissions: 1 },
       ]);
     });
 
-    it('sums hours and counts reports within a group', async () => {
+    it('sums hours and counts events within a group', async () => {
       const repo = await create();
 
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 2, date_: '2026-08-17' }));
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 3, date_: '2026-08-18' }));
 
       expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
-        { key: 'A', totalHours: 5, reportCount: 2 },
+        { key: 'A', totalHours: 5, events: 2, submissions: 2 },
       ]);
     });
 
@@ -364,7 +364,7 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
 
       const [first] = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
 
-      expect(first).toEqual({ key: 'B', totalHours: 4, reportCount: 1 });
+      expect(first).toEqual({ key: 'B', totalHours: 4, events: 1, submissions: 1 });
     });
 
     it('breaks ties on the key, so the order is stable across reloads', async () => {
@@ -402,7 +402,7 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9 }));
 
       expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
-        { key: 'A', totalHours: 1, reportCount: 1 },
+        { key: 'A', totalHours: 1, events: 1, submissions: 1 },
       ]);
     });
 
@@ -436,8 +436,8 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       await repo.add(inDept('75', { discipline: 'sport', nbHours: 6, schoolId: 'B' }));
 
       expect(await repo.top({ departement: '75', dimension: 'discipline', limit: 5 })).toEqual([
-        { key: 'sport', totalHours: 6, reportCount: 1 },
-        { key: 'maths', totalHours: 1, reportCount: 1 },
+        { key: 'sport', totalHours: 6, events: 1, submissions: 1 },
+        { key: 'maths', totalHours: 1, events: 1, submissions: 1 },
       ]);
     });
 
@@ -451,8 +451,148 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       // and the discipline is optional on the form, so it would be a common
       // outcome, not an edge case.
       expect(await repo.top({ departement: '75', dimension: 'discipline', limit: 5 })).toEqual([
-        { key: 'maths', totalHours: 1, reportCount: 1 },
+        { key: 'maths', totalHours: 1, events: 1, submissions: 1 },
       ]);
+    });
+  });
+
+  /**
+   * The point of `missed_hour_event` (migration 007): five people reporting one
+   * cancelled maths hour is one hour of lost teaching, not five.
+   *
+   * Every assertion here runs against both backends, because a SQL `group by`
+   * and a JS `Map` are two very different ways to get this wrong — and if they
+   * ever disagree, the site's headline numbers are the thing that silently
+   * breaks.
+   */
+  describe('deduplication of corroborated reports', () => {
+    /** The same hour, described identically. */
+    const hour = {
+      schoolId: 'A',
+      class: '6e',
+      classGroup: 'B' as const,
+      date_: '2026-08-17',
+      discipline: 'maths' as const,
+      nbHours: 2,
+      departement: '75',
+    };
+
+    it('counts a corroborated hour once in the totals', async () => {
+      const repo = await create();
+
+      await repo.add(report({ ...hour, createdAt: daysAgo(3) }));
+      await repo.add(report({ ...hour, createdAt: daysAgo(2) }));
+      await repo.add(report({ ...hour, createdAt: daysAgo(1) }));
+
+      const stats = await repo.stats();
+
+      // Three submissions, one two-hour event. The old behaviour said 6.
+      expect(stats.total_hours).toBe(2);
+      expect(stats.total_hours_last_7d).toBe(2);
+    });
+
+    it('still adds up genuinely distinct hours', async () => {
+      const repo = await create();
+
+      // Same class and day, different subjects: two different hours, not
+      // corroboration. Deduplicating must not swallow these.
+      await repo.add(report({ ...hour, discipline: 'maths', nbHours: 2 }));
+      await repo.add(report({ ...hour, discipline: 'sport', nbHours: 1 }));
+
+      expect((await repo.stats()).total_hours).toBe(3);
+    });
+
+    it('measures the rolling window from the first report, not the latest', async () => {
+      const repo = await create();
+
+      // First described well outside the window, corroborated yesterday. The
+      // event is old; a fresh corroboration must not drag it back into "this
+      // week" and read as new activity.
+      await repo.add(report({ ...hour, createdAt: daysAgo(STATS_WINDOW_DAYS + 3) }));
+      await repo.add(report({ ...hour, createdAt: daysAgo(1) }));
+
+      const stats = await repo.stats();
+
+      expect(stats.total_hours).toBe(2);
+      expect(stats.total_hours_last_7d).toBe(0);
+    });
+
+    it('ranks on hours lost, so corroboration cannot inflate a school', async () => {
+      const repo = await create();
+
+      // School A: one hour, reported by four people. School B: three genuinely
+      // different hours. B has lost more teaching and must rank first.
+      for (const n of [4, 3, 2, 1]) {
+        await repo.add(report({ ...hour, schoolId: 'A', nbHours: 2, createdAt: daysAgo(n) }));
+      }
+      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'maths', nbHours: 1 }));
+      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'sport', nbHours: 1 }));
+      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'svt', nbHours: 1 }));
+
+      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+
+      expect(top).toEqual([
+        { key: 'B', totalHours: 3, events: 3, submissions: 3 },
+        { key: 'A', totalHours: 2, events: 1, submissions: 4 },
+      ]);
+    });
+
+    it('keeps the submissions visible without letting them into the ranking', async () => {
+      const repo = await create();
+
+      await repo.add(report({ ...hour, createdAt: daysAgo(2) }));
+      await repo.add(report({ ...hour, createdAt: daysAgo(1) }));
+
+      const [entry] = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+
+      expect(entry.events).toBe(1);
+      expect(entry.submissions).toBe(2);
+      expect(entry.totalHours).toBe(2);
+    });
+
+    it.each(CORROBORATION_KEY)(
+      'treats reports differing in %s as separate hours',
+      async (field) => {
+        const repo = await create();
+
+        // The drift guard. Every field of `CORROBORATION_KEY` must split an
+        // event in *both* backends — if the view's `group by` and this constant
+        // ever fall out of step, the totals go wrong silently, and this is
+        // where that shows up.
+        const different: Record<string, unknown> = {
+          schoolId: 'OTHER',
+          class: '5e',
+          classGroup: 'F',
+          date_: '2026-08-18',
+          discipline: 'sport',
+          nbHours: 4,
+        };
+
+        await repo.add(report(hour));
+        await repo.add(report({ ...hour, [field]: different[field] }));
+
+        const stats = await repo.stats();
+
+        // Two events, so the hours add up rather than collapsing.
+        expect(stats.total_hours).toBe(2 + (field === 'nbHours' ? 4 : 2));
+      }
+    );
+
+    it('does not split an event when only the département differs', async () => {
+      const repo = await create();
+
+      // `departement` is aggregated by the view rather than grouped, precisely
+      // so a row written before `006` (null) and one written after ('75') stay
+      // one event. Grouping on it would double-count the rows this view exists
+      // to combine.
+      await repo.add(report({ ...hour, departement: null, createdAt: daysAgo(2) }));
+      await repo.add(report({ ...hour, departement: '75', createdAt: daysAgo(1) }));
+
+      expect((await repo.stats()).total_hours).toBe(2);
+      // And the surviving département is the non-null one, so the event still
+      // appears in that département's ranking.
+      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+      expect(top).toEqual([{ key: 'A', totalHours: 2, events: 1, submissions: 2 }]);
     });
   });
 });

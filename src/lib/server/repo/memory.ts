@@ -64,17 +64,27 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
     async stats() {
       await jitter();
 
+      // Over *events*, not rows — the in-memory equivalent of the SQL backends
+      // reading `missed_hour_event`. Summing the raw rows would count a
+      // corroborated hour once per reporter.
+      const events = eventsOf(rows);
+
       // Same rolling window as the SQL backend: the last 7 * 24h counted back from
-      // now, not calendar days.
+      // now, not calendar days. Measured from when the event was *first*
+      // reported, so a fresh corroboration cannot drag an old event back into
+      // this week.
       const cutoffMs = Date.now() - STATS_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-      const isInWindow = (m: NewMissedHour) => Date.parse(m.createdAt) >= cutoffMs;
-      const sumHours = (ms: NewMissedHour[]) => ms.reduce((total, m) => total + m.nbHours, 0);
+      const isInWindow = (e: MissedHourEvent) => Date.parse(e.firstReportedAt) >= cutoffMs;
+      const sumHours = (es: MissedHourEvent[]) => es.reduce((total, e) => total + e.nbHours, 0);
 
       return {
-        total_hours: sumHours(rows),
-        total_hours_last_7d: sumHours(rows.filter(isInWindow)),
-        classes_affected: new Set(rows.map((m) => m.class)).size,
-        schools_affected: new Set(rows.map((m) => m.schoolId)).size,
+        total_hours: sumHours(events),
+        total_hours_last_7d: sumHours(events.filter(isInWindow)),
+        // Distinct already, so grouping changes nothing — but they are computed
+        // from the same events as the sums, so all four numbers describe one
+        // view of the data.
+        classes_affected: new Set(events.map((e) => e.class)).size,
+        schools_affected: new Set(events.map((e) => e.schoolId)).size,
       } satisfies MissedHourStats;
     },
 
@@ -83,17 +93,19 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
 
       const totals = new Map<string, TopMissedHours>();
 
-      for (const row of rows) {
-        if (departement !== null && row.departement !== departement) continue;
+      for (const event of eventsOf(rows)) {
+        if (departement !== null && event.departement !== departement) continue;
 
         // The `null` case is the discipline nobody named. Skipped rather than
         // bucketed, exactly as the SQL's `is not null` does.
-        const key = dimension === 'school' ? row.schoolId : row.discipline;
+        const key = dimension === 'school' ? event.schoolId : event.discipline;
         if (key === null) continue;
 
-        const entry = totals.get(key) ?? { key, totalHours: 0, reportCount: 0 };
-        entry.totalHours += row.nbHours;
-        entry.reportCount += 1;
+        const entry = totals.get(key) ?? { key, totalHours: 0, events: 0, submissions: 0 };
+        // The event's hours once, however many people reported it.
+        entry.totalHours += event.nbHours;
+        entry.events += 1;
+        entry.submissions += event.submissions;
         totals.set(key, entry);
       }
 
@@ -128,4 +140,47 @@ function compareKeys(a: string, b: string): number {
  */
 function corroborationKeyOf(row: NewMissedHour): string {
   return JSON.stringify(CORROBORATION_KEY.map((field) => row[field]));
+}
+
+/** One distinct missed hour — the in-memory shape of the `missed_hour_event` view. */
+interface MissedHourEvent extends NewMissedHour {
+  /** How many reports describe this hour. */
+  submissions: number;
+  /** When it was first reported; the rolling window measures from here. */
+  firstReportedAt: string;
+}
+
+/**
+ * Collapse rows into distinct missed hours.
+ *
+ * The in-memory counterpart of `migrations/007_missed_hour_event_view.ts`, and
+ * held to the same numbers by the conformance suite — a SQL `group by` and a JS
+ * `Map` are two very different ways to get this wrong.
+ *
+ * `departement` is taken from the first non-null value rather than being part of
+ * the key, for the same reason the view aggregates it: it is nullable until
+ * `scripts/backfill-departement.ts` has run, and grouping on it would split one
+ * event into a backfilled half and a null half.
+ */
+function eventsOf(rows: readonly NewMissedHour[]): MissedHourEvent[] {
+  const events = new Map<string, MissedHourEvent>();
+
+  for (const row of rows) {
+    const key = corroborationKeyOf(row);
+    const existing = events.get(key);
+
+    if (!existing) {
+      events.set(key, { ...row, submissions: 1, firstReportedAt: row.createdAt });
+      continue;
+    }
+
+    existing.submissions += 1;
+    existing.departement ??= row.departement;
+
+    if (Date.parse(row.createdAt) < Date.parse(existing.firstReportedAt)) {
+      existing.firstReportedAt = row.createdAt;
+    }
+  }
+
+  return [...events.values()];
 }

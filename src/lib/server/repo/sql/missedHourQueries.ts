@@ -170,10 +170,24 @@ export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
 /**
  * The four aggregates for the stats panel, in one round trip.
  *
+ * **Reads `missed_hour_event`, not `missed_hour`.** Summing `nb_hours` over the
+ * raw table counts a corroborated hour once per reporter — measured against the
+ * real data, that overstated the total by 54%. The view collapses each distinct
+ * missed hour to one row, so this sums hours actually lost.
+ *
+ * `schools_affected` and `classes_affected` are unchanged by the switch, since
+ * `count(distinct …)` already ignored duplicates. They read from the view
+ * anyway, so all four numbers come from one definition of the data.
+ *
+ * The rolling window filters on `first_reported_at` — when the event was first
+ * described. Using the *latest* corroboration instead would let a three-week-old
+ * event re-enter "this week" because somebody confirmed it yesterday, which
+ * reads as new activity that did not happen.
+ *
  * Built rather than hand-written: `filter (where …)`, `coalesce` and
  * `count(distinct)` are all first-class in Kysely, so the column references are
- * checked against `MissedHourTable` instead of being opaque strings. Only the
- * `interval` arithmetic stays a `sql` fragment, because that is dialect SQL
+ * checked against the generated view type instead of being opaque strings. Only
+ * the `interval` arithmetic stays a `sql` fragment, because that is dialect SQL
  * rather than a gap in the builder.
  *
  * Deliberately no `::int` casts. `sum()` and `count()` come back as
@@ -183,7 +197,7 @@ export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
  */
 export function statsMissedHours(windowDays: number = STATS_WINDOW_DAYS): SqlQuery {
   return db
-    .selectFrom('missed_hour')
+    .selectFrom('missed_hour_event')
     .select((eb) => [
       eb.fn.coalesce(eb.fn.sum('nb_hours'), sql`0`).as('total_hours'),
       eb.fn
@@ -191,7 +205,7 @@ export function statsMissedHours(windowDays: number = STATS_WINDOW_DAYS): SqlQue
           eb.fn
             .sum('nb_hours')
             .filterWhere(
-              'created_at',
+              'first_reported_at',
               '>=',
               sql<Date>`now() - (${windowDays}::int * interval '1 day')`
             ),
@@ -208,7 +222,8 @@ export function statsMissedHours(windowDays: number = STATS_WINDOW_DAYS): SqlQue
 export const TOP_ALIAS = {
   key: 'key',
   totalHours: 'total_hours',
-  reportCount: 'report_count',
+  events: 'events',
+  submissions: 'submissions',
 } as const;
 
 /**
@@ -223,35 +238,43 @@ export const TOP_ALIAS = {
 const DIMENSION_COLUMN = {
   school: 'school_id',
   discipline: 'discipline',
-} as const satisfies Record<string, keyof Database['missed_hour']>;
+} as const satisfies Record<string, keyof Database['missed_hour_event']>;
 
 /**
  * The ranking behind the dashboard.
  *
+ * **Reads `missed_hour_event`**, for the same reason `statsMissedHours` does: a
+ * school where five parents reported one cancelled hour has lost one hour, and
+ * ranking it above a school that genuinely lost three would invert the whole
+ * point of the page.
+ *
+ * `events` counts distinct missed hours; `submissions` sums how many reports
+ * stand behind them, so the corroboration is still visible without inflating the
+ * ranking.
+ *
  * `where … group by … order by … limit` — the whole thing runs in the engine and
- * returns at most `limit` rows. The alternative, aggregating every row and
- * ranking in JS, was never really on the table once `departement` became a
- * column: see `migrations/006_missed_hour_departement.ts`.
+ * returns at most `limit` rows.
  *
  * `is not null` on the grouping column does double duty. For `discipline` it
  * drops the reports that never named a subject, which would otherwise rank first
- * under the label "unknown"; for `school_id`, which is `not null` in the schema,
- * it costs nothing and keeps one query serving both dimensions.
+ * under the label "unknown"; for `school_id` it costs nothing and keeps one
+ * query serving both dimensions.
  *
- * The tie-break on the key is not cosmetic: without it two departments with
- * equal totals come back in whatever order the engine's hash aggregate happens
- * to produce, which can differ between two runs of the *same* query and makes
- * the page flicker between reloads.
+ * The tie-break on the key is not cosmetic: without it two groups with equal
+ * totals come back in whatever order the engine's hash aggregate happens to
+ * produce, which can differ between two runs of the *same* query and makes the
+ * page flicker between reloads.
  */
 export function topMissedHours({ departement, dimension, limit }: TopQuery): SqlQuery {
   const column = DIMENSION_COLUMN[dimension];
 
   let query = db
-    .selectFrom('missed_hour')
+    .selectFrom('missed_hour_event')
     .select((eb) => [
       eb.ref(column).as(TOP_ALIAS.key),
       eb.fn.sum('nb_hours').as(TOP_ALIAS.totalHours),
-      eb.fn.countAll().as(TOP_ALIAS.reportCount),
+      eb.fn.countAll().as(TOP_ALIAS.events),
+      eb.fn.sum('submissions').as(TOP_ALIAS.submissions),
     ])
     .where(column, 'is not', null)
     .groupBy(column)
