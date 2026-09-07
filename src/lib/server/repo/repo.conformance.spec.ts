@@ -4,6 +4,7 @@ import { migrateDuckDb } from '$lib/server/db/duckdbMigrate';
 import type { NewMissedHour } from '$lib/types/missedHours';
 import { createMemoryMissedHourRepo } from './memory';
 import { createDuckDbMissedHourRepo } from './duckdb';
+import { withCache } from './cached';
 import { CORROBORATION_KEY, STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
 
 /**
@@ -38,6 +39,17 @@ const BACKENDS: { name: string; create: () => Promise<MissedHourRepo> }[] = [
       await migrateDuckDb(connection);
       return createDuckDbMissedHourRepo(connection);
     },
+  },
+  {
+    // Not a backend — the cache `src/lib/server/repo/index.ts` wraps the real one
+    // in. It belongs here because its whole promise is that it changes nothing:
+    // a `MissedHourRepo` that caches reads is still a `MissedHourRepo`, and the
+    // contract below is the definition of that. `cached.spec.ts` tests the
+    // caching; this row tests the *absence* of any other difference, which is
+    // where an under-invalidating cache shows up — as a suite that passes for
+    // every backend and fails for this one.
+    name: 'cached memory',
+    create: async () => withCache(createMemoryMissedHourRepo(0), { log: () => {} }),
   },
 ];
 
