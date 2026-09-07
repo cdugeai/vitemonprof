@@ -89,8 +89,8 @@ describe('withCache', () => {
     await cached.list(5);
     await cached.list(10);
     await cached.list(5);
-    await cached.top({ departement: null, dimension: 'school', limit: 5 });
-    await cached.top({ departement: '76', dimension: 'school', limit: 5 });
+    await cached.top({ departement: null, dimension: 'departement', limit: 5 });
+    await cached.top({ departement: '76', dimension: 'departement', limit: 5 });
     await cached.top({ departement: '76', dimension: 'discipline', limit: 5 });
     await cached.top({ departement: '76', dimension: 'discipline', limit: 5 });
 
@@ -100,8 +100,8 @@ describe('withCache', () => {
     expect(calls).toEqual([
       'list:5',
       'list:10',
-      'top:all:school:5',
-      'top:76:school:5',
+      'top:all:departement:5',
+      'top:76:departement:5',
       'top:76:discipline:5',
     ]);
   });
@@ -112,18 +112,18 @@ describe('withCache', () => {
 
     await cached.list(5);
     await cached.stats();
-    await cached.top({ departement: null, dimension: 'school', limit: 5 });
+    await cached.top({ departement: null, dimension: 'departement', limit: 5 });
     calls.length = 0;
 
     await cached.add(REPORT);
 
     await cached.list(5);
     await cached.stats();
-    await cached.top({ departement: null, dimension: 'school', limit: 5 });
+    await cached.top({ departement: null, dimension: 'departement', limit: 5 });
 
     // A new report moves the list, both totals and any ranking it belongs to, so
     // all three lanes have to be cold again.
-    expect(calls).toEqual(['add', 'list:5', 'stats', 'top:all:school:5']);
+    expect(calls).toEqual(['add', 'list:5', 'stats', 'top:all:departement:5']);
   });
 
   it('passes the store’s id back through, after invalidating', async () => {

@@ -100,9 +100,10 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
       for (const event of eventsOf(rows)) {
         if (departement !== null && event.departement !== departement) continue;
 
-        // The `null` case is the discipline nobody named. Skipped rather than
-        // bucketed, exactly as the SQL's `is not null` does.
-        const key = dimension === 'school' ? event.schoolId : event.discipline;
+        // The `null` case is the discipline nobody named, or the school the
+        // registry does not have and so cannot place in a département. Skipped
+        // rather than bucketed, exactly as the SQL's `is not null` does.
+        const key = dimension === 'departement' ? event.departement : event.discipline;
         if (key === null) continue;
 
         const entry = totals.get(key) ?? { key, totalHours: 0, events: 0, submissions: 0 };

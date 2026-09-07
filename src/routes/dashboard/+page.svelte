@@ -16,7 +16,9 @@
   let { data }: PageProps = $props();
 
   const ALL_DEPARTEMENTS = 'all';
-  const SKELETON_ROWS = 5;
+
+  /** Mirrors `TOP_LIMIT`, which lives in a server-only module. */
+  const TOP_LIMIT = 5;
 
   let open = $state(false);
   let typedText = $state('');
@@ -76,14 +78,30 @@
     });
   }
 
+  /**
+   * A ranking of départements narrowed to one département is a ranking of one
+   * row, so the card stops claiming to be a top 5 and says what it now is: that
+   * zone's total. The discipline ranking is unaffected — narrowing it still
+   * leaves five subjects to rank.
+   */
+  let singleZone = $derived(data.dimension === 'departement' && data.departement !== null);
+
   let heading = $derived(
-    data.dimension === 'school'
-      ? 'Établissements les plus concernés'
-      : 'Matières les plus concernées'
+    data.dimension === 'discipline'
+      ? 'Matières les plus concernées'
+      : singleZone
+        ? 'Heures non remplacées'
+        : 'Départements les plus concernés'
   );
 
   let scope = $derived(
     data.departement ? `Département ${departementLabel(data.departement)}` : 'Toute la France'
+  );
+
+  let subtitle = $derived(
+    singleZone
+      ? `${scope} — total des heures soumises.`
+      : `${scope} — top ${TOP_LIMIT} par heures manquées.`
   );
 
   /**
@@ -165,10 +183,10 @@
         bind:value={() => data.dimension, (value) => value && navigate('dimension', value)}
       >
         <ToggleGroup.Item
-          value="school"
+          value="departement"
           class="bg-mybeige-bg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-11 flex-1"
         >
-          École
+          Département
         </ToggleGroup.Item>
         <ToggleGroup.Item
           value="discipline"
@@ -183,14 +201,18 @@
   <Card.Root>
     <Card.Header>
       <Card.Title>{heading}</Card.Title>
-      <Card.Description>{scope} — top {SKELETON_ROWS} par heures manquées.</Card.Description>
+      <Card.Description>{subtitle}</Card.Description>
     </Card.Header>
     <Card.Content>
       {#await data.ranking}
+        <!-- One placeholder when only one row can come back, so the card does
+             not collapse from five rows to one as the ranking resolves. -->
         <ul class="space-y-2">
-          {#each { length: SKELETON_ROWS }, i (i)}
+          {#each { length: singleZone ? 1 : TOP_LIMIT }, i (i)}
             <li class="flex animate-pulse items-center gap-3 rounded-xl border p-3">
-              <div class="bg-muted size-8 shrink-0 rounded-lg"></div>
+              {#if !singleZone}
+                <div class="bg-muted size-8 shrink-0 rounded-lg"></div>
+              {/if}
               <div class="flex-1 space-y-2">
                 <div class="bg-muted h-3.5 w-2/3 rounded"></div>
                 <div class="bg-muted h-3 w-1/3 rounded"></div>
@@ -216,12 +238,21 @@
           <ol class="space-y-2">
             {#each ranking as entry, index (entry.key)}
               <li class="flex items-center gap-3 rounded-xl border p-3">
-                <span
-                  class="bg-muted text-muted-foreground grid size-8 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums"
-                  aria-hidden="true"
-                >
-                  {index + 1}
-                </span>
+                <!--
+                  No rank badge on a ranking of one. `aria-hidden` already
+                  keeps it out of the accessible name — it is a second
+                  rendering of the row’s position — and a lone « 1 » in front
+                  of a département reads as "first in France", which is the one
+                  thing this view is not saying.
+                -->
+                {#if !singleZone}
+                  <span
+                    class="bg-muted text-muted-foreground grid size-8 shrink-0 place-items-center rounded-lg text-sm font-semibold tabular-nums"
+                    aria-hidden="true"
+                  >
+                    {index + 1}
+                  </span>
+                {/if}
 
                 <div class="min-w-0 flex-1">
                   <div class="flex items-baseline justify-between gap-2">
@@ -232,24 +263,25 @@
                     </p>
                   </div>
 
-                  {#if entry.sublabel}
-                    <p class="text-muted-foreground truncate text-xs">{entry.sublabel}</p>
-                  {/if}
-
                   <!--
                     `aria-hidden`, because the row already states the hours and
                     the report count in text. The bar is a second rendering of
-                    the same fact, not a fact of its own.
+                    the same fact, not a fact of its own — and it is measured
+                    against the leader, so on a ranking of one there is nothing
+                    for it to say. A lone full-width bar would read as a gauge
+                    at its maximum rather than as the top of a scale of one.
                   -->
-                  <div
-                    class="bg-muted mt-1.5 h-1.5 overflow-hidden rounded-full"
-                    aria-hidden="true"
-                  >
+                  {#if !singleZone}
                     <div
-                      class="bg-primary h-full rounded-full"
-                      style:width={share(entry.totalHours, max)}
-                    ></div>
-                  </div>
+                      class="bg-muted mt-1.5 h-1.5 overflow-hidden rounded-full"
+                      aria-hidden="true"
+                    >
+                      <div
+                        class="bg-primary h-full rounded-full"
+                        style:width={share(entry.totalHours, max)}
+                      ></div>
+                    </div>
+                  {/if}
 
                   <!--
                     Two numbers, because they mean different things: the ranking

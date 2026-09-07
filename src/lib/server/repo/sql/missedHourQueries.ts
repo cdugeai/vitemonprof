@@ -8,7 +8,7 @@ import {
   type ExpressionBuilder,
 } from 'kysely';
 import type { DB } from '$lib/server/db/types.generated';
-import type { NewMissedHour } from '$lib/types/missedHours';
+import type { NewMissedHour, TopDimension } from '$lib/types/missedHours';
 import { STATS_WINDOW_DAYS, type TopQuery } from '../types';
 
 /**
@@ -243,20 +243,27 @@ export const TOP_ALIAS = {
  * generated schema, so the dimension can never widen into an arbitrary string
  * reaching `groupBy` — the one place in this module where a caller-supplied
  * value would otherwise be spliced into SQL as an identifier rather than bound
- * as a parameter.
+ * as a parameter. `Record<TopDimension, …>` rather than `Record<string, …>`
+ * makes it exhaustive too: adding a dimension to the domain union without a
+ * column here is a compile error rather than an `undefined` reaching `groupBy`.
  */
 const DIMENSION_COLUMN = {
-  school: 'school_id',
+  departement: 'departement',
   discipline: 'discipline',
-} as const satisfies Record<string, keyof Database['missed_hour_event']>;
+} as const satisfies Record<TopDimension, keyof Database['missed_hour_event']>;
 
 /**
  * The ranking behind the dashboard.
  *
  * **Reads `missed_hour_event`**, for the same reason `statsMissedHours` does: a
- * school where five parents reported one cancelled hour has lost one hour, and
- * ranking it above a school that genuinely lost three would invert the whole
- * point of the page.
+ * département where five parents reported one cancelled hour has lost one hour,
+ * and ranking it above one that genuinely lost three would invert the whole
+ * point of the page. That view is also the answer to "should the ranking get a
+ * view of its own?" — the deduplication is the calculation worth naming in the
+ * schema, and what is left on top of it is a `group by` whose column, filter and
+ * limit all come from the request. A second view would have to freeze those, and
+ * would need a sibling for the discipline dimension this one query already
+ * serves.
  *
  * `events` counts distinct missed hours; `submissions` sums how many reports
  * stand behind them, so the corroboration is still visible without inflating the
@@ -265,10 +272,16 @@ const DIMENSION_COLUMN = {
  * `where … group by … order by … limit` — the whole thing runs in the engine and
  * returns at most `limit` rows.
  *
- * `is not null` on the grouping column does double duty. For `discipline` it
- * drops the reports that never named a subject, which would otherwise rank first
- * under the label "unknown"; for `school_id` it costs nothing and keeps one
- * query serving both dimensions.
+ * `is not null` on the grouping column drops what cannot be placed: reports that
+ * never named a subject, which would otherwise rank first under a label naming
+ * none, and reports whose school is absent from the registry, which belong to no
+ * département. It is the same clause for both dimensions, so one query still
+ * serves both.
+ *
+ * Note what that means for the national ranking by département: it excludes the
+ * unplaceable rows the homepage's national total includes. Attributing them
+ * anywhere would be a guess, and a "Non précisé" bucket on a page whose job is
+ * to name zones is the noise this clause exists to remove.
  *
  * The tie-break on the key is not cosmetic: without it two groups with equal
  * totals come back in whatever order the engine's hash aggregate happens to

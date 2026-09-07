@@ -143,24 +143,24 @@ describe('statsMissedHours', () => {
 
 describe('topMissedHours', () => {
   it('reads the deduplicated view, not the raw table', () => {
-    const { sql } = topMissedHours({ departement: '75', dimension: 'school', limit: 5 });
+    const { sql } = topMissedHours({ departement: '75', dimension: 'departement', limit: 5 });
 
     expect(sql).toContain('from "missed_hour_event"');
     expect(sql).not.toMatch(/from "missed_hour"/);
   });
 
   it('counts distinct hours and the submissions behind them separately', () => {
-    const { sql } = topMissedHours({ departement: '75', dimension: 'school', limit: 5 });
+    const { sql } = topMissedHours({ departement: '75', dimension: 'departement', limit: 5 });
 
     expect(sql).toContain('count(*) as "events"');
     expect(sql).toContain('sum("submissions") as "submissions"');
   });
 
   const query = (overrides = {}) =>
-    topMissedHours({ departement: '75', dimension: 'school', limit: 5, ...overrides });
+    topMissedHours({ departement: '75', dimension: 'departement', limit: 5, ...overrides });
 
-  it('groups by school for the school dimension and by discipline for the other', () => {
-    expect(query({ dimension: 'school' }).sql).toContain('group by "school_id"');
+  it('groups by the column the dimension names', () => {
+    expect(query({ dimension: 'departement' }).sql).toContain('group by "departement"');
     expect(query({ dimension: 'discipline' }).sql).toContain('group by "discipline"');
   });
 
@@ -173,13 +173,15 @@ describe('topMissedHours', () => {
   it('breaks ties on the key so two reloads agree', () => {
     // Without this the engine returns equal groups in whatever order its hash
     // aggregate produced, which is not stable even between runs of one query.
-    expect(query().sql).toMatch(/order by sum\("nb_hours"\) desc, "school_id" asc/);
+    expect(query().sql).toMatch(/order by sum\("nb_hours"\) desc, "departement" asc/);
   });
 
   it('drops rows with no value for the grouped column', () => {
     // Reports that named no discipline would otherwise rank first under a label
-    // that names no subject.
+    // that names no subject; reports whose school is missing from the registry
+    // belong to no département and so to no zone's total.
     expect(query({ dimension: 'discipline' }).sql).toContain('"discipline" is not null');
+    expect(query({ dimension: 'departement' }).sql).toContain('"departement" is not null');
   });
 
   it('binds the département rather than splicing it into the SQL', () => {
@@ -191,8 +193,10 @@ describe('topMissedHours', () => {
 
   it('omits the filter entirely for a national ranking', () => {
     // Not `departement is null`, which would match only the rows written before
-    // migration 006 and never backfilled.
-    const { sql } = query({ departement: null });
+    // migration 006 and never backfilled. Asserted on the discipline dimension,
+    // where `departement` can only appear as a filter — on the other one it is
+    // also the grouped column.
+    const { sql } = query({ departement: null, dimension: 'discipline' });
 
     expect(sql).not.toContain('"departement"');
   });

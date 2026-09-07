@@ -60,13 +60,21 @@ export interface MissedHourRepo {
   stats(): Promise<MissedHourStats>;
 
   /**
-   * The `limit` schools — or disciplines — with the most missed hours, ranked by
-   * total hours descending.
+   * The `limit` départements — or disciplines — with the most missed hours,
+   * ranked by total hours descending.
    *
-   * `departement: null` means the whole country. Rows whose grouping value is
-   * null are excluded: a "Non précisé" entry would top the discipline ranking on
-   * a young dataset while naming no subject at all, which is noise where the
-   * page's whole job is to name things.
+   * `departement: null` means the whole country; a code narrows the ranking to
+   * that one zone, which for the `departement` dimension leaves exactly the one
+   * row describing it.
+   *
+   * Rows whose grouping value is null are excluded: a "Non précisé" entry would
+   * top the discipline ranking on a young dataset while naming no subject at
+   * all, which is noise where the page's whole job is to name things. The same
+   * rule now bites on `departement`, and it is the honest reading — a report
+   * whose school is not in the registry belongs to no zone, so it can be counted
+   * in no zone's total. The consequence worth knowing is that a national
+   * ranking by département no longer sums to the national total the homepage
+   * shows; it sums to the part of it that could be placed on a map.
    *
    * Ranked by hours rather than by number of reports, because hours is the
    * quantity the site is about — and because report count is the easier number
