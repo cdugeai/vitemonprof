@@ -159,6 +159,6 @@
     closeOnClick={false}
     onclose={() => (selectedSchool = undefined)}
   >
-    <PresenterSchool {school} force_newline={true} />
+    <PresenterSchool {school} class="max-w-56" />
   </Popup>
 {/if}
