@@ -1,6 +1,9 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
+  import { getSchoolsInfo } from '$lib/server/db_tmp';
   import type { MissedHour } from '$lib/types/missedHours';
+  import type { School } from '$lib/types/school';
+  import { onMount } from 'svelte';
 
   interface Props {
     missed_hours: MissedHour[];
@@ -10,6 +13,13 @@
   let { missed_hours, is_loading }: Props = $props();
   const LAST_TO_DISPLAY = 5;
   let missed_hours_to_display = $derived(missed_hours.slice(0, LAST_TO_DISPLAY));
+
+  let schools_infos: Map<string, School> = $state(new Map());
+
+  onMount(async () => {
+    let r = await getSchoolsInfo(missed_hours_to_display.map((mh1) => mh1.schoolId));
+    schools_infos = r;
+  });
 </script>
 
 <!-- Recent Reports -->
@@ -26,6 +36,7 @@
       {:else}
         {#each missed_hours_to_display as mh (mh.uuid)}
           <p>{mh.schoolId}</p>
+          <p>{schools_infos.get(mh.schoolId)?.name}</p>
         {/each}
       {/if}
     </div>
