@@ -50,7 +50,7 @@ test('a parent can report a missed class and see it appear in the recent list', 
   await pickFromSearchableSelect(
     page,
     'Établissement',
-    'Rechercher',
+    'Nom, ville ou code postal',
     'Collège Georges Brassens',
     /Collège Georges Brassens/
   );
@@ -111,7 +111,13 @@ test('a rejection is a toast, and the next report still goes through', async ({ 
   // report matches that school, and the rows this test files would break it on any run
   // that reuses a still-running dev server — `reuseExistingServer` keeps the in-memory
   // store alive between local runs.
-  await pickFromSearchableSelect(page, 'Établissement', 'Rechercher', 'Jean Moulin', /Jean Moulin/);
+  await pickFromSearchableSelect(
+    page,
+    'Établissement',
+    'Nom, ville ou code postal',
+    'Jean Moulin',
+    /Jean Moulin/
+  );
   await page.getByRole('button', { name: 'Classe' }).click();
   await page.getByRole('option', { name: '2nde', exact: true }).click();
   await page.getByRole('button', { name: 'Date' }).click();
@@ -166,7 +172,7 @@ test('future dates are rejected', async ({ page }) => {
   await pickFromSearchableSelect(
     page,
     'Établissement',
-    'Rechercher',
+    'Nom, ville ou code postal',
     'Collège Georges Brassens',
     /Collège Georges Brassens/
   );
@@ -221,7 +227,7 @@ test('the class dropdown follows the school that was picked', async ({ page }) =
   await pickFromSearchableSelect(
     page,
     'Établissement',
-    'Rechercher',
+    'Nom, ville ou code postal',
     'Collège Georges Brassens',
     /Collège Georges Brassens/
   );
@@ -234,4 +240,54 @@ test('the class dropdown follows the school that was picked', async ({ page }) =
   await expect(page.getByRole('option', { name: '3e', exact: true })).toBeVisible();
   await expect(cm2).toHaveCount(0);
   await expect(premiere).toHaveCount(0);
+});
+
+// The issue this fixes: « Blaise Pascal » and « Jules Verne » are on schools all over
+// France, the endpoint returns the first ten it finds, and the one you want is not
+// among them. Adding a postal code has to narrow the list, not widen it.
+test('a postal code narrows a school search instead of adding to it', async ({ page }) => {
+  await page.goto('/');
+
+  const search = page.getByPlaceholder('Nom, ville ou code postal');
+
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Établissement' }).click();
+    await expect(search).toBeFocused({ timeout: 2000 });
+  }).toPass({ timeout: 20000 });
+
+  // A query broad enough that the registry certainly overflows the cap, so the hint
+  // telling people how to narrow it is on screen at the moment they need it.
+  await search.fill('ecole elementaire');
+  const options = page.getByRole('option');
+  await expect(options).toHaveCount(10);
+  await expect(page.getByText(/Trop de résultats/)).toBeVisible();
+
+  /**
+   * Every option matches `expected`, and there is at least one.
+   *
+   * Retried, because the list on screen is still the *previous* query's until the
+   * 250 ms debounce and the round trip behind it have both run — asserting once
+   * would read stale rows and pass or fail on timing rather than on the filter.
+   */
+  async function expectEveryOptionToMatch(expected: RegExp) {
+    await expect(async () => {
+      const labels = await options.allTextContents();
+      expect(labels.length).toBeGreaterThan(0);
+      for (const label of labels) expect(label).toMatch(expected);
+    }).toPass({ timeout: 10000 });
+  }
+
+  // The same name plus a postal code. Every survivor is in the 11th arrondissement —
+  // an OR would have *added* schools here rather than removing them.
+  //
+  // A full code rather than the « 75 » a user would more likely type, because the
+  // registry contains « Ecole élémentaire RPI 75 » in the Pas-de-Calais: a numeric
+  // token matches names too, by design, and that is not the property under test
+  // here. `schoolSearch.spec.ts` pins prefix matching against fixed data instead.
+  await search.fill('ecole elementaire 75011');
+  await expectEveryOptionToMatch(/\(75011 /);
+
+  // Accents are optional on the way in — « élémentaire » finds the same schools.
+  await search.fill('école élémentaire 75011');
+  await expectEveryOptionToMatch(/\(75011 /);
 });

@@ -1,6 +1,6 @@
 import { departementFromInsee, departementFromPostalCode } from '$lib/departements';
+import { buildSchoolSearchIndex, searchSchoolIndex, type IndexedSchool } from '$lib/schoolSearch';
 import type { School } from '$lib/types/school';
-import { normalizeText } from '$lib/utils';
 import { isMaternelle } from './schoolKind';
 import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre.csv?raw';
 
@@ -92,15 +92,18 @@ export function getSchoolsInfo(school_ids: string[]): Map<string, School> {
   );
 }
 
-/** Schools whose name or postal code contains `query_string` (case/accent-insensitive). */
-export function getSchoolsFilterName(query_string: string): School[] {
-  const needle = normalizeText(query_string.trim());
+let cachedSearchIndex: IndexedSchool[] | null = null;
 
-  if (needle === '') {
-    return getSchools();
-  }
+/**
+ * Schools matching a free-text query — name, city or postal code.
+ *
+ * The rules live in `$lib/schoolSearch`, which has no data in it and is therefore
+ * testable; this function only owns the memoized index, for the same reason
+ * `getSchools()` memoizes the parse. Both caches are process-wide and never
+ * invalidated: the CSV is baked into the bundle at build time.
+ */
+export function searchSchools(query_string: string): School[] {
+  cachedSearchIndex ??= buildSchoolSearchIndex(getSchools());
 
-  return getSchools().filter(
-    (sc) => normalizeText(sc.name).includes(needle) || sc.postalCode.includes(needle)
-  );
+  return searchSchoolIndex(cachedSearchIndex, query_string);
 }

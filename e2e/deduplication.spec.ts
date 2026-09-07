@@ -25,9 +25,7 @@ async function totalHours(page: Page): Promise<number> {
 
   // The tile is two sibling `<p>`s: the number, then its label. Anchoring on the
   // label and stepping back is stabler than a class selector.
-  const value = page
-    .getByText('Heures non remplacées')
-    .locator('xpath=preceding-sibling::p[1]');
+  const value = page.getByText('Heures non remplacées').locator('xpath=preceding-sibling::p[1]');
 
   // The stats are streamed, so the tile renders '-' until the query lands.
   await expect(value).not.toHaveText('-');
