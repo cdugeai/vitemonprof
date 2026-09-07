@@ -16,13 +16,11 @@
   import type { ClassLevel } from '$lib/classLevels';
   import type { Discipline } from '$lib/disciplines';
 
-
   let selectedClass: ClassLevel | undefined = $state();
   let selectedClassGroup: ClassGroup | undefined = $state();
   let selectedDiscipline: Discipline | undefined = $state();
   let selectedSchool: School | undefined = $state();
   let selectedDate: CalendarDate | undefined = $state();
-  let selectedDept: string | undefined = $state();
   let nbHours: number = $state(1);
 
   let { data, form }: PageProps = $props();
@@ -101,7 +99,6 @@
       }}
     >
       <CardReport
-        bind:selectedDept
         bind:selectedClass
         bind:selectedClassGroup
         bind:selectedDiscipline
@@ -136,7 +133,6 @@
         </Alert.Root>
       {/if}
       <input type="hidden" name="nbHours" value={nbHours} />
-      <input type="hidden" name="dept" value={selectedDept} />
       <input type="hidden" name="class" value={selectedClass} />
       <input type="hidden" name="classGroup" value={selectedClassGroup ?? ''} />
       <input type="hidden" name="discipline" value={selectedDiscipline ?? ''} />

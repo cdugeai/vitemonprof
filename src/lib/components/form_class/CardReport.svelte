@@ -14,7 +14,6 @@
   import SelectorClass from './SelectorClass.svelte';
   import SelectorClassGroup from './SelectorClassGroup.svelte';
   import SelectorDiscipline from './SelectorDiscipline.svelte';
-  import SelectorDepartement from './SelectorDepartement.svelte';
   import SelectorSchool from './SelectorSchool.svelte';
   import DatePicker from '../DatePicker.svelte';
   import PresenterSchool from './PresenterSchool.svelte';
@@ -27,7 +26,6 @@
   import NumberHoursInput from './NumberHoursInput.svelte';
 
   interface Props {
-    selectedDept?: string;
     selectedClass?: ClassLevel;
     selectedClassGroup?: ClassGroup;
     selectedDiscipline?: Discipline;
@@ -39,7 +37,6 @@
   }
 
   let {
-    selectedDept = $bindable(),
     selectedClass = $bindable(),
     selectedClassGroup = $bindable(),
     selectedDiscipline = $bindable(),
@@ -102,10 +99,7 @@
           </Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="o_list">
-          <div class="flex flex-col gap-2">
-            <SelectorDepartement bind:selectedDept />
-            <SelectorSchool bind:selectedSchool />
-          </div>
+          <SelectorSchool bind:selectedSchool />
         </Tabs.Content>
         <Tabs.Content value="o_map">
           <div class="h-75 overflow-hidden rounded-xl border bg-gray-100">
