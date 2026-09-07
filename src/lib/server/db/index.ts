@@ -10,8 +10,8 @@ if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
  *
  * The missed-hour repo now executes SQL built by `repo/sql/`, so it needs
  * `client.unsafe(sql, bindings)` rather than Drizzle's query builder. `db` stays
- * because better-auth is wired to `drizzleAdapter(db)` and drizzle-kit reads
- * `schema.ts` to migrate — two jobs Knex is not doing.
+ * because better-auth is wired to `drizzleAdapter(db)`. Migrations are no longer
+ * its job: `migrations/` plus `npm run db:migrate` own the schema now.
  */
 export const client = postgres(env.DATABASE_URL);
 

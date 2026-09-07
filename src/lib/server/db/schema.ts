@@ -1,5 +1,23 @@
 import { pgTable, serial, integer, text, uuid, date, timestamp, index } from 'drizzle-orm/pg-core';
 
+/**
+ * Drizzle table definitions — a **description** of the database, not the thing
+ * that creates it.
+ *
+ * `migrations/` is what actually shapes Postgres now (`npm run db:migrate`);
+ * `drizzle-kit push` used to diff this file and generate the DDL, and it is gone.
+ * So this file has two remaining jobs:
+ *
+ * - better-auth's `drizzleAdapter` queries through the Drizzle instance built from
+ *   it in `./index.ts`.
+ * - `repo/sql/missedHourQueries.ts` derives its physical column names from it, and
+ *   fails the build if they drift.
+ *
+ * The consequence worth knowing: **editing this file no longer changes any
+ * database.** A column added here without a matching migration compiles happily
+ * and then fails at runtime. Change the migration first, then mirror it here.
+ */
+
 export const task = pgTable('task', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),

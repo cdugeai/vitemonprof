@@ -1,10 +1,10 @@
 /**
  * The schema, as hand-written DDL.
  *
- * Every other backend gets its schema from `schema.ts` via drizzle-kit. DuckDB
- * can't: Drizzle ships dialects for Postgres, MySQL, SQLite, SingleStore and Gel,
- * and DuckDB is none of them. There is no `duckTable`, so there is nothing for
- * `drizzle-kit push` to read.
+ * Postgres gets its schema from the versioned scripts in `migrations/`. DuckDB
+ * cannot use those: Kysely's `Migrator` needs a dialect that can execute, and
+ * Kysely has no DuckDB dialect — the shared query layer only ever *compiles* SQL
+ * for this engine, it never runs it.
  *
  * Applied on every connect rather than through a migration folder. `if not exists`
  * makes that idempotent, and at one table it is honest — but it is also the
