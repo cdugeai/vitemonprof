@@ -57,6 +57,18 @@ Styling is **Tailwind CSS v4** (via `@tailwindcss/vite`) plus **shadcn-svelte** 
 
 Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.
 
+## The schools dataset
+
+`data/…-premier-et-second-degre.csv` is the national school registry (~27 MB,
+63k rows). It is **gitignored** and fetched by `scripts/fetch-schools.ts`:
+
+- `npm run data:schools` — download it if missing
+- `npm run data:schools -- --force` — refresh it (the dataset changes upstream)
+
+`predev` and `prebuild` run it automatically, so `npm run dev`, `npm run build`
+and Playwright (whose `webServer` is `npm run dev`) all just work on a fresh
+clone.
+
 ## Migrations
 
 Schema changes are versioned Kysely migrations in `migrations/`, applied by a

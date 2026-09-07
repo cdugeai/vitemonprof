@@ -1,6 +1,6 @@
 import type { School } from '$lib/types/school';
 import { normalizeText } from '$lib/utils';
-import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre-sample100.csv?raw';
+import csvContent from '../../../data/fr-en-adresse-et-geolocalisation-etablissements-premier-et-second-degre.csv?raw';
 
 let cachedSchools: School[] | null = null;
 
