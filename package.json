@@ -19,7 +19,8 @@
     "test:e2e": "playwright test",
     "db:migrate": "node --env-file=.env scripts/migrate.ts",
     "db:migrate:down": "node --env-file=.env scripts/migrate.ts down",
-    "db:migrate:status": "node --env-file=.env scripts/migrate.ts status"
+    "db:migrate:status": "node --env-file=.env scripts/migrate.ts status",
+    "db:types": "node --env-file=.env scripts/gen-types.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -41,6 +42,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.19.0",
     "globals": "^17.6.0",
+    "kysely-codegen": "^0.20.0",
+    "pg": "^8.23.0",
     "postgres": "^3.4.9",
     "prettier": "^3.8.3",
     "prettier-plugin-svelte": "^4.1.0",

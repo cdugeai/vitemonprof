@@ -5,57 +5,21 @@ import {
   PostgresIntrospector,
   PostgresQueryCompiler,
   sql,
-  type ColumnType,
   type ExpressionBuilder,
 } from 'kysely';
-import { getTableColumns } from 'drizzle-orm';
-import type { missedHour } from '$lib/server/db/schema';
+import type { DB } from '$lib/server/db/types.generated';
 import type { MissedHour } from '$lib/types/missedHours';
 import { STATS_WINDOW_DAYS } from '../types';
 
 /**
- * The shape of `missed_hour` as Kysely sees it: physical column names, physical
- * types.
+ * `DB` is generated from the live database by `npm run db:types`, so the column
+ * names and types checked here are the ones Postgres actually has — not a
+ * hand-written guess that has to be cross-checked against a second declaration.
  *
- * `ColumnType<Select, Insert, Update>` is how Kysely says "this column reads back
- * as one type but accepts another on the way in". `created_at` is the case that
- * needs it — the domain hands us an ISO string, the driver returns a `Date`.
+ * That is what replaced the Drizzle-derived compile-time guard: there is no
+ * second schema to disagree with any more.
  */
-interface MissedHourTable {
-  uuid: string;
-  school_id: string;
-  class: string;
-  class_group: string | null;
-  discipline: string | null;
-  date: string;
-  nb_hours: number;
-  created_at: ColumnType<Date, string, string>;
-}
-
-interface Database {
-  missed_hour: MissedHourTable;
-}
-
-/**
- * Compile-time proof that the interface above still matches `schema.ts`.
- *
- * Drizzle carries its physical column names in the *type* system, not just at
- * runtime, so the union below is `'uuid' | 'school_id' | …` rather than `string`.
- * Comparing it against `keyof MissedHourTable` in both directions means adding a
- * column to the schema — or misspelling one here — fails the build instead of
- * failing a query at runtime.
- *
- * This is what replaces the `getTableColumns` lookup the Knex version used: same
- * single source of truth, but checked once at compile time rather than resolved
- * on every call.
- */
-type DrizzleColumns = ReturnType<typeof getTableColumns<typeof missedHour>>;
-type DrizzleColumnName = DrizzleColumns[keyof DrizzleColumns]['_']['name'];
-type MutuallyAssignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _columnsMatchDrizzleSchema: MutuallyAssignable<keyof MissedHourTable, DrizzleColumnName> =
-  true;
+type Database = DB;
 
 /**
  * Kysely wired to a `DummyDriver` — it can compile queries but can never execute
