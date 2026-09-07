@@ -13,6 +13,7 @@
   let selectedClass: string = $state('none');
   let selectedSchool: School | null = $state(null);
   let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
+  let selectedDate: string = $state('');
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -49,33 +50,36 @@
           <Card.Title>Log Missed Hours</Card.Title>
         </Card.Header>
         <Card.Content>
-          <form class="space-y-4">
+          <form method="POST" class="space-y-4">
             <div class="space-y-2">
               <Label for="school">School</Label>
-              <Input id="school" type="text" value={selectedSchool?.id} hidden />
+              <Input id="school" type="text" name="schoolId" value={selectedSchool?.id} hidden />
               <PresenterSchool school={selectedSchool} />
             </div>
 
             <div class="space-y-2">
               <Label for="class">Class</Label>
               <SelectorClass bind:selectedClass />
+              <Input name="class" value={selectedClass} hidden />
             </div>
 
             <div class="flex flex-wrap gap-x-3">
               <div class="space-y-2">
                 <Label for="date">Date Missed</Label>
-                <Input id="date" type="date" />
+                <Input id="date" type="date" name="date" bind:value={selectedDate} required />
               </div>
               <div class="space-y-2">
                 <Label for="nb_hours">Number of class hours</Label>
                 <Input
                   id="nb_hours"
                   type="number"
+                  name="nbHours"
                   max="4"
                   min="1"
                   step="1"
                   defaultValue={DEFAULT_NB_HOURS}
                   bind:value={selectedNbHours}
+                  required
                 />
               </div>
             </div>
