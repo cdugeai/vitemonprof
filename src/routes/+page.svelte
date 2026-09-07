@@ -117,7 +117,12 @@
     </div>
   </section>
 
-  <!-- Main Content Grid -->
+  <!--
+    Two columns on desktop, one stack on mobile. The right column is a plain flex
+    stack rather than two grid items, so the source order — form, chiffres,
+    récents — stays the reading order on mobile, where the grid collapses to one
+    column and every `md:` rule below switches off.
+  -->
   <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
     <!-- Form Section (Left) -->
     <!--
@@ -182,44 +187,68 @@
       <input type="hidden" name="date" value={dateToISO(selectedDate)} />
     </form>
 
-    <!-- Statistics Preview Section (Right) -->
-    <section>
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Ce que disent les signalements</Card.Title>
-          <Card.Description>
-            Une heure signalée par plusieurs personnes n'est comptée qu'une fois.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <!--
-            Awaited in the template rather than in `onMount`: `data.missed_hours_stats` is a
-            streamed promise, and a new one arrives every time `load` re-runs. An `onMount`
-            only ever reads the first one, so the numbers would go stale after a submit.
-          -->
-          {#await data.missed_hours_stats}
-            {@render stats('-', '-', '-', '-')}
-          {:then s}
-            {@render stats(
-              s.total_hours.toString(),
-              s.total_hours_last_7d.toString(),
-              s.schools_affected.toString(),
-              s.classes_affected.toString()
-            )}
-          {/await}
-        </Card.Content>
-      </Card.Root>
-    </section>
-  </div>
+    <!--
+      Right column: the two read-only panels, stacked and clamped to the form.
 
-  <!-- Recent reports-->
-  <section class="mt-12">
-    {#await data.missed_hours}
-      <RecentReports missed_hours={[]} is_loading={true} />
-    {:then mh}
-      <RecentReports missed_hours={mh} is_loading={false} />
-    {/await}
-  </section>
+      The empty `md:relative` wrapper is what makes the columns end level. A grid
+      row is as tall as its tallest item, so a right column that simply stacked
+      both cards would be the thing *deciding* the row height — and there is then
+      no non-circular way to tell it to be shorter than itself.
+
+      `md:absolute` takes the stack out of flow, so the wrapper measures as zero
+      and the form sizes the row alone; `md:inset-0` then stretches the stack back
+      over exactly that height. The constraint arrives from outside, which is what
+      breaks the loop.
+
+      All of it is behind `md:`, so mobile keeps a static, naturally-sized stack
+      with no scroll container and no absolute positioning.
+    -->
+    <div class="md:relative">
+      <div class="flex flex-col gap-8 md:absolute md:inset-0">
+        <!-- Statistics Preview -->
+        <section class="shrink-0">
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>Ce que disent les signalements</Card.Title>
+              <Card.Description>
+                Une heure signalée par plusieurs personnes n'est comptée qu'une fois.
+              </Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <!--
+              Awaited in the template rather than in `onMount`: `data.missed_hours_stats` is a
+              streamed promise, and a new one arrives every time `load` re-runs. An `onMount`
+              only ever reads the first one, so the numbers would go stale after a submit.
+            -->
+              {#await data.missed_hours_stats}
+                {@render stats('-', '-', '-', '-')}
+              {:then s}
+                {@render stats(
+                  s.total_hours.toString(),
+                  s.total_hours_last_7d.toString(),
+                  s.schools_affected.toString(),
+                  s.classes_affected.toString()
+                )}
+              {/await}
+            </Card.Content>
+          </Card.Root>
+        </section>
+
+        <!--
+          `md:min-h-0` for the same reason it appears inside `RecentReports`: without
+          it this flex item will not shrink below its content, and the card would
+          overflow the clamped column instead of scrolling inside it.
+        -->
+        <section class="md:min-h-0 md:flex-1">
+          {#await data.missed_hours}
+            <RecentReports missed_hours={[]} is_loading={true} class="md:h-full" />
+          {:then mh}
+            <RecentReports missed_hours={mh} is_loading={false} class="md:h-full" />
+          {/await}
+        </section>
+      </div>
+    </div>
+  </div>
 </div>
 
 {#snippet stats(total: string, last7d: string, schools: string, classes: string)}
