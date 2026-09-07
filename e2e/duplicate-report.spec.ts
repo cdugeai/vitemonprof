@@ -24,8 +24,8 @@ async function submitReport(page: Page, fields: ReportFields) {
 
     return {
       status: res.status,
-      // A SvelteKit action answers a rejected submission with 200 and the
-      // failure in the body, so the message is what carries the outcome.
+      // The status says accepted or refused, and `submission-status.spec.ts`
+      // pins it; which of the two guards refused is only in the message.
       isDuplicate: text.includes('Vous avez déjà effectué ce signalement.'),
       isRateLimited: text.includes('Trop de signalements'),
     };
@@ -46,7 +46,9 @@ test('the same report sent twice is refused the second time', async ({ page }) =
   const first = await submitReport(page, BASE);
   const second = await submitReport(page, BASE);
 
+  expect(first.status).toBe(201);
   expect(first.isDuplicate).toBe(false);
+  expect(second.status).toBe(429);
   expect(second.isDuplicate).toBe(true);
   // Not the burst limit — two submissions are nowhere near five a minute. If
   // this ever flips, the wrong guard is doing the work.

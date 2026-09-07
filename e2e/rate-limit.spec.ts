@@ -45,7 +45,7 @@ test.describe('rate limiting', () => {
         { schoolId: `test-school-${i}`, class: '6e', date: '2026-08-20', nbHours: '1' }
       );
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(response.isRateLimited).toBe(false);
     }
   });
@@ -92,7 +92,7 @@ test.describe('rate limiting', () => {
       };
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(429);
     expect(response.isRateLimited).toBe(true);
     expect(response.hasErrorMessage).toBe(true);
   });

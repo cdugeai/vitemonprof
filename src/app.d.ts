@@ -7,6 +7,12 @@ declare global {
     interface Locals {
       user?: User;
       session?: Session;
+      /**
+       * The HTTP status a form action wants its response to carry, when
+       * SvelteKit would otherwise answer 200. Set by the action, applied by
+       * `handleActionStatus` in `hooks.server.ts`.
+       */
+      actionStatus?: number;
     }
 
     // interface Error {}

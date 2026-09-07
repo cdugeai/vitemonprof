@@ -78,6 +78,34 @@ Split into two modules so the client chunk only tree-shakes in pako's inflate ha
 pako 3 renamed the decode option: it is `{ toText: true }`, and the old
 `{ to: 'string' }` is now ignored silently (you get a `Uint8Array` back).
 
+## What a submission answers
+
+`POST /` returns a status that says what happened to the report, and it takes a
+hook to do it — `handleActionStatus` in `hooks.server.ts`, fed by
+`locals.actionStatus`, which the action sets next to each `fail()`.
+
+| outcome                | enhanced (`use:enhance`) | no JS |
+| ---------------------- | ------------------------ | ----- |
+| accepted               | `201`                    | `303` |
+| invalid field          | `400`                    | `400` |
+| throttled or duplicate | `429`                    | `429` |
+
+Left to itself SvelteKit answers 200 to all six, for two unrelated reasons:
+
+- **The enhanced path is 200 by design.** `use:enhance` asks for
+  `application/json`, and SvelteKit replies with a 200 whose _body_ is the
+  outcome (`{"type":"redirect","status":303}` or `{"type":"failure","status":400}`).
+  `deserialize()` in `$app/forms` reads the body and ignores the status, which is
+  what makes the outer one safe to overwrite.
+- **A streamed page loses the failure's status.** `load` returns un-awaited
+  promises, so the HTML is chunked, and SvelteKit's `render_response()` passes
+  `status` only on the non-streamed branch — the 400 never reaches the wire.
+
+The hook overwrites a 200 and nothing else. That is what leaves the no-JS `303`
+alone: Post/Redirect/Get needs a redirect the browser actually follows, so
+"accepted" has two codes and they say which kind of client reported.
+`e2e/submission-status.spec.ts` pins all six.
+
 ## Maplibre GL
 
 Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good quality code for the mapping part.

@@ -1,5 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { building } from '$app/environment';
+import { handleActionStatus } from '$lib/server/actionStatus';
 import { auth } from '$lib/server/auth';
 import { getSessionCookie } from 'better-auth/cookies';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
@@ -44,4 +46,9 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
   return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle: Handle = handleBetterAuth;
+/**
+ * `handleActionStatus` is first, which means outermost: `sequence` nests the
+ * handles left to right, so it is the last one to see the response and can
+ * restamp whatever the rest of the chain produced.
+ */
+export const handle: Handle = sequence(handleActionStatus, handleBetterAuth);
