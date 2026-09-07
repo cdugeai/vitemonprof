@@ -80,6 +80,7 @@
     "@duckdb/node-api": "^1.5.5-r.4",
     "kysely": "^0.29.5",
     "kysely-postgres-js": "^3.0.0",
+    "lru-cache": "^11.5.2",
     "pako": "^3.0.1"
   }
 }

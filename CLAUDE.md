@@ -132,6 +132,50 @@ alone: Post/Redirect/Get needs a redirect the browser actually follows, so
 "accepted" has two codes and they say which kind of client reported.
 `e2e/submission-status.spec.ts` pins all six.
 
+## Reads are cached for five minutes
+
+Every read the pages make — the five recent reports, the stats panel, each
+dashboard ranking — goes through an LRU cache in `src/lib/server/repo/cached.ts`,
+and `src/lib/server/repo/index.ts` is the only place that applies it.
+
+It wraps the **port**, not a backend and not a loader. `MissedHourRepo` has
+exactly one write, so invalidation has exactly one site: `add()` empties
+everything and no caller can forget to. That also means every backend inherits
+the cache, and `repo.conformance.spec.ts` replays the whole contract through
+`withCache(memory)` as a third row — a cache that under-invalidates fails the
+suite every other backend passes.
+
+The cache is **per process**, as the issue asked: several nodes each keep their
+own, so a report accepted by one is invisible to another's cache until entries
+age out. Five minutes is the ceiling on _that_ lag only — a write is visible on
+its own node immediately.
+
+Three log lines say whether any of this is worth keeping, one per read:
+
+```
+[cache] miss list:5 (312ms)   a database round trip
+[cache] wait list:5           joined one already in flight
+[cache] hit  list:5           answered from memory
+```
+
+Two things a plain `get`/`set` pair gets wrong, and the reason the lane keeps its
+own bookkeeping instead of using lru-cache's `fetch()`:
+
+- **A read that was in flight when a write landed holds pre-write rows.** Storing
+  them would hide the new report for the whole TTL — from the person who just
+  filed it, whose next request is the reload right behind the redirect. A
+  generation counter is bumped by every invalidation, and a load only writes to
+  the cache if the generation it started in is still current.
+- **Concurrent misses would each query.** They are coalesced onto one load, which
+  matters exactly after an invalidation: submitting empties the cache and the
+  submitter's own reload arrives immediately after.
+
+lru-cache's `fetch()` does both, and is not used because `clear()` **aborts** a
+pending `fetch`, and an aborted `fetch` rejects with `Error('deleted')` — a
+visitor whose page load overlapped someone else's submission would get a 500 for
+it. `updateAgeOnGet` stays off for a related reason: refreshing the TTL on every
+read would let `list:5`, read on every visit to the homepage, never expire.
+
 ## Page metadata lives in one component
 
 Every page renders exactly one `<Seo />` (`src/lib/components/Seo.svelte`) instead

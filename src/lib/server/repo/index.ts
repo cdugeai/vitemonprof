@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { createMemoryMissedHourRepo } from './memory';
 import { createPostgresMissedHourRepo } from './postgres';
 import { createDuckDbMissedHourRepo } from './duckdb';
+import { withCache } from './cached';
 import type { MissedHourRepo } from './types';
 
 export type { MissedHourRepo } from './types';
@@ -72,5 +73,11 @@ async function createRepo(): Promise<MissedHourRepo> {
  * `MissedHourRepo`, not a `Promise<MissedHourRepo>` they'd each have to unwrap. Fine
  * in SvelteKit — server modules are ESM, where top-level await is a supported feature
  * rather than a hack.
+ *
+ * Wrapped in `withCache`, so every backend gets the same read-through cache and
+ * the same invalidation on write. It goes here rather than inside a backend
+ * because it is not storage: it is a property of *this process's* view of
+ * storage, and a process has exactly one of those — which is also why the
+ * wrapper only means anything applied to the singleton.
  */
-export const missedHourRepo: MissedHourRepo = await createRepo();
+export const missedHourRepo: MissedHourRepo = withCache(await createRepo());
