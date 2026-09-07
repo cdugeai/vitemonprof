@@ -12,7 +12,8 @@
   import * as Alert from '$lib/components/ui/alert';
   import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
   import type { PageProps } from './$types';
-  import { canSubmitForm, firstMissingRequirement } from '$lib/utils_form';
+  import { canSubmitForm } from '$lib/utils_form';
+  import { onMount } from 'svelte';
 
   const DEFAULT_NB_HOURS = 1;
 
@@ -20,6 +21,20 @@
   let selectedSchool: School | null = $state(null);
   let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
   let selectedDate: string = $state('');
+
+  let stats_total_hours = $state('-');
+  let stats_total_hours_last_7d = $state('-');
+  let stats_classes_affected = $state('-');
+  let stats_schools_affected = $state('-');
+
+  // Update stats when available
+  onMount(async () => {
+    let r = await data.missed_hours_stats;
+    stats_total_hours = r.total_hours.toString();
+    stats_total_hours_last_7d = r.total_hours_last_7d.toString();
+    stats_classes_affected = r.classes_affected.toString();
+    stats_schools_affected = r.schools_affected.toString();
+  });
 
   let { data, form }: PageProps = $props();
 
@@ -125,20 +140,20 @@
       <Card.Content>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div class="rounded-lg bg-blue-50 p-4 text-center">
-            <p class="text-3xl font-bold text-blue-600">0</p>
+            <p class="text-3xl font-bold text-blue-600">{stats_total_hours}</p>
             <p class="text-sm text-gray-600">Total Hours Missed</p>
           </div>
+          <div class="rounded-lg bg-green-50 p-4 text-center">
+            <p class="text-3xl font-bold text-green-600">{stats_total_hours_last_7d}</p>
+            <p class="text-sm text-gray-600">Total Hours Missed (last 7 days)</p>
+          </div>
           <div class="rounded-lg bg-yellow-50 p-4 text-center">
-            <p class="text-3xl font-bold text-yellow-600">0</p>
-            <p class="text-sm text-gray-600">Schools Tracked</p>
+            <p class="text-3xl font-bold text-yellow-600">{stats_schools_affected}</p>
+            <p class="text-sm text-gray-600">Schools Affected</p>
           </div>
           <div class="rounded-lg bg-red-50 p-4 text-center">
-            <p class="text-3xl font-bold text-red-600">0</p>
+            <p class="text-3xl font-bold text-red-600">{stats_classes_affected}</p>
             <p class="text-sm text-gray-600">Classes Affected</p>
-          </div>
-          <div class="rounded-lg bg-green-50 p-4 text-center">
-            <p class="text-3xl font-bold text-green-600">0</p>
-            <p class="text-sm text-gray-600">This Week</p>
           </div>
         </div>
       </Card.Content>

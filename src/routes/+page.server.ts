@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions } from './$types';
-import { addMissedHour, getMissedHour } from '$lib/server/db_tmp';
+import { addMissedHour, computeStats, getMissedHour } from '$lib/server/db_tmp';
 import { randomUUID } from 'crypto';
 
 import type { PageLoad } from './$types';
@@ -8,6 +8,7 @@ import type { PageLoad } from './$types';
 export const load: PageLoad = ({ params }) => {
   return {
     missed_hours: getMissedHour(),
+    missed_hours_stats: computeStats(),
   };
 };
 export const actions = {
