@@ -18,9 +18,9 @@ export function firstMissingRequirement({
   selectedClass,
   selectedDate,
 }: FormHintProps): string | null {
-  if (!selectedSchool) return 'Pick a school on the map to continue.';
-  if (selectedClass === 'none') return 'Select a class to continue.';
-  if (!selectedDate) return 'Choose the date missed to continue.';
+  if (!selectedSchool) return 'Choisissez une école sur la carte pour continuer.';
+  if (!selectedClass) return 'Sélectionnez une classe pour continuer.';
+  if (!selectedDate) return 'Choisissez la date manquée pour continuer.';
   return null;
 }
 

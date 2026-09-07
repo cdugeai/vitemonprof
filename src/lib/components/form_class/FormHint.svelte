@@ -5,8 +5,8 @@
   import { firstMissingRequirement } from '$lib/utils_form';
 
   export interface FormHintProps {
-    selectedSchool: School | null;
-    selectedClass: string;
+    selectedSchool: School | undefined;
+    selectedClass: string | undefined;
     selectedDate: string;
   }
 
@@ -22,7 +22,7 @@
 {#if hint}
   <Alert.Root>
     <InfoIcon />
-    <Alert.Title>Almost there</Alert.Title>
+    <Alert.Title>Presque terminé</Alert.Title>
     <Alert.Description>{hint}</Alert.Description>
   </Alert.Root>
   <div class="mt-2"></div>

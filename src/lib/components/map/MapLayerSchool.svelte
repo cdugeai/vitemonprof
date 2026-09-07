@@ -11,6 +11,7 @@
   import type * as maplibregl from 'maplibre-gl';
   import type { FeatureCollection, Point } from 'geojson';
   import { MAP_CLUSTER_MAX_ZOOM, MAP_CLUSTER_RADIUS } from '$lib/constants';
+  import PresenterSchool from '../form_class/PresenterSchool.svelte';
 
   const MAP_SCHOOL_SOURCE_ID = 'schools';
   const MAP_SCHOOL_CLUSTERS_LAYER_ID = 'school-clusters';
@@ -20,7 +21,7 @@
   interface Props {
     schools: School[];
     /** The school whose popup is currently open, or `null` when none is. */
-    selectedSchool: School | null;
+    selectedSchool: School | undefined;
   }
 
   let {
@@ -69,7 +70,7 @@
 
   function onSchoolClick(ev: maplibregl.MapLayerMouseEvent) {
     const id = ev.features?.[0]?.properties.id as string | undefined;
-    selectedSchool = (id && byId.get(id)) || null;
+    selectedSchool = (id && byId.get(id)) || undefined;
   }
 
   // The popup is deliberately created with `closeOnClick: false`: MapLibre would
@@ -84,11 +85,21 @@
       const hits = map.queryRenderedFeatures(ev.point, {
         layers: [MAP_SCHOOL_CLUSTERS_LAYER_ID, MAP_SCHOOL_POINTS_LAYER_ID],
       });
-      if (hits.length === 0) selectedSchool = null;
+      if (hits.length === 0) selectedSchool = undefined;
     };
 
     map.on('click', onMapClick);
     return () => map.off('click', onMapClick);
+  });
+
+  $effect(() => {
+    if (selectedSchool && mapCtx.map) {
+      mapCtx.map.flyTo({
+        center: [selectedSchool.longitude, selectedSchool.latitude],
+        zoom: 12,
+        duration: 1000,
+      });
+    }
   });
 </script>
 
@@ -146,8 +157,8 @@
     lnglat={{ lng: school.longitude, lat: school.latitude }}
     offset={12}
     closeOnClick={false}
-    onclose={() => (selectedSchool = null)}
+    onclose={() => (selectedSchool = undefined)}
   >
-    <span class="text-sm">{school.name}</span>
+    <PresenterSchool {school} force_newline={true} />
   </Popup>
 {/if}

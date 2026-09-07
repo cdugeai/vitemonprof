@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { School } from './types/school';
+import { getLocalTimeZone, type CalendarDate } from '@internationalized/date';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -11,3 +13,8 @@ export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
+
+export const buildLabelSchool = (s: School) => `${s.name} (${s.postalCode} ${s.city})`;
+
+export const dateToStr = (date_: CalendarDate | undefined) =>
+  date_ ? date_.toDate(getLocalTimeZone()).toLocaleDateString() : '';

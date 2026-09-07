@@ -1,28 +1,19 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import MapMain from '$lib/components/MapMain.svelte';
-  import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
   import type { School } from '$lib/types/school';
-  import PresenterSchool from '$lib/components/form_class/PresenterSchool.svelte';
   import RecentReports from '$lib/components/RecentReports.svelte';
-  import FormHint from '$lib/components/form_class/FormHint.svelte';
-  import * as Alert from '$lib/components/ui/alert';
-  import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
   import type { PageProps } from './$types';
-  import { canSubmitForm, todayLocalISO } from '$lib/utils_form';
+  import { canSubmitForm } from '$lib/utils_form';
   import { onMount } from 'svelte';
+  import CardReport from '$lib/components/form_class/CardReport.svelte';
+  import { CalendarDate } from '@internationalized/date';
+  import { dateToStr } from '$lib/utils';
 
-  const DEFAULT_NB_HOURS = 1;
-
-  let selectedClass: string = $state('none');
-  let selectedSchool: School | null = $state(null);
-  let selectedNbHours: number | null = $state(DEFAULT_NB_HOURS);
-  // Defaults to today: reporting a class you missed today is by far the common
-  // case. Still `required` and still bound, so the user can freely change it.
-  let selectedDate: string = $state(todayLocalISO());
+  let selectedClass: string | undefined = $state();
+  let selectedSchool: School | undefined = $state();
+  let selectedDate: CalendarDate | undefined = $state();
+  let selectedDept: string | undefined = $state();
+  let nbHours: number = $state(1);
 
   let stats_total_hours = $state('-');
   let stats_total_hours_last_7d = $state('-');
@@ -43,126 +34,76 @@
   // Client-side guardrail: reuses FormHint's rules so the button and the hint
   // can never disagree. This only improves UX — the server action stays the real
   // validation boundary, since a disabled button is trivial to bypass.
-  let canSubmit = $derived(canSubmitForm({ selectedSchool, selectedClass, selectedDate }));
+  let canSubmit = $derived(
+    canSubmitForm({
+      selectedSchool,
+      selectedClass,
+      selectedDate: dateToStr(selectedDate),
+    })
+  );
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
   <!-- Hero Section -->
-  <section class="mb-12">
-    <div class="rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 p-8 text-white">
-      <h1 class="mb-4 text-4xl font-bold">Track Missed Hours</h1>
-      <p class="text-lg">
-        Keep track of missed classes and accumulated hours across your school community.
+  <section class="mb-6">
+    <div class="bg-mybeige-bg rounded-lg p-8">
+      <p class="text-primary mb-2 text-sm font-semibold tracking-wide uppercase">
+        Moniteur national des absences en classe
+      </p>
+      <h1 class="text-foreground mb-4 text-5xl font-bold">
+        Chaque classe manquée mérite d'être comptabilisée.
+      </h1>
+      <p class="text-muted-foreground text-lg">
+        Les parents et les élèves peuvent enregistrer les absences des enseignants et contribuer à
+        une image plus claire des apprentissages perdus dans votre communauté scolaire.
       </p>
     </div>
   </section>
 
   <!-- Main Content Grid -->
-  <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+  <form method="POST" class="grid grid-cols-1 gap-8 lg:grid-cols-3">
     <!-- Map Section (Left - 2 cols) -->
     <section class="lg:col-span-2">
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>School Locator</Card.Title>
-        </Card.Header>
-        <Card.Content class="p-0">
-          <div class="h-96 rounded-lg bg-gray-100">
-            <MapMain bind:selectedSchool />
-          </div>
-        </Card.Content>
-      </Card.Root>
+      <CardReport
+        bind:selectedDept
+        bind:selectedClass
+        bind:selectedSchool
+        bind:selectedDate
+        bind:nbHours
+        {canSubmit}
+      />
+      <input type="hidden" name="nbHours" value={nbHours} />
+      <input type="hidden" name="dept" value={selectedDept} />
+      <input type="hidden" name="class" value={selectedClass} />
+      <input type="hidden" name="schoolId" value={selectedSchool?.id} />
+      <input type="hidden" name="school_name" value={selectedSchool?.name} />
+      <input type="hidden" name="date" value={dateToStr(selectedDate)} />
     </section>
-
-    <!-- Report Section (Right) -->
-    <section>
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Log Missed Hours</Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <FormHint {selectedSchool} {selectedClass} {selectedDate} />
-
-          <form method="POST" class="space-y-4">
-            <div class="space-y-2">
-              <Label for="school">School</Label>
-              <Input id="school" type="text" name="schoolId" value={selectedSchool?.id} hidden />
-              <PresenterSchool school={selectedSchool} />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="class">Class</Label>
-              <SelectorClass bind:selectedClass />
-              <Input name="class" value={selectedClass} hidden />
-            </div>
-
-            <div class="flex flex-wrap gap-x-3">
-              <div class="space-y-2">
-                <Label for="date">Date Missed</Label>
-                <Input id="date" type="date" name="date" bind:value={selectedDate} required />
-              </div>
-              <div class="space-y-2">
-                <Label for="nb_hours">Number of class hours</Label>
-                <Input
-                  id="nb_hours"
-                  type="number"
-                  name="nbHours"
-                  max="4"
-                  min="1"
-                  step="1"
-                  defaultValue={DEFAULT_NB_HOURS}
-                  bind:value={selectedNbHours}
-                  required
-                />
-              </div>
-            </div>
-
-            <!--
-              Keyed on the server's error, not on `canSubmit`: `form` is set after
-              *any* completed submission, so pairing it with the client-side
-              readiness check lit this up on success too (the form resets on the
-              full-page POST, which makes `canSubmit` false again). Unmet-field
-              guidance is FormHint's job; this alert is only for a failed round trip.
-            -->
-            {#if form?.error}
-              <Alert.Root variant="destructive">
-                <CircleAlertIcon />
-                <Alert.Title>Could not log those hours</Alert.Title>
-                <Alert.Description>{form.error}</Alert.Description>
-              </Alert.Root>
-            {/if}
-
-            <Button type="submit" class="w-full" variant="outline" disabled={!canSubmit}>
-              Log Hours
-            </Button>
-          </form>
-        </Card.Content>
-      </Card.Root>
-    </section>
-  </div>
+  </form>
 
   <!-- Statistics Preview Section -->
   <section class="mt-12">
     <Card.Root>
       <Card.Header>
-        <Card.Title>Statistics Overview</Card.Title>
+        <Card.Title>Aperçu des statistiques</Card.Title>
       </Card.Header>
       <Card.Content>
         <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div class="rounded-lg bg-blue-50 p-4 text-center">
             <p class="text-3xl font-bold text-blue-600">{stats_total_hours}</p>
-            <p class="text-sm text-gray-600">Total Hours Missed</p>
+            <p class="text-sm text-gray-600">Total des heures manquées</p>
           </div>
           <div class="rounded-lg bg-green-50 p-4 text-center">
             <p class="text-3xl font-bold text-green-600">{stats_total_hours_last_7d}</p>
-            <p class="text-sm text-gray-600">Hours reported last week</p>
+            <p class="text-sm text-gray-600">Heures rapportées la semaine dernière</p>
           </div>
           <div class="rounded-lg bg-yellow-50 p-4 text-center">
             <p class="text-3xl font-bold text-yellow-600">{stats_schools_affected}</p>
-            <p class="text-sm text-gray-600">Schools Affected</p>
+            <p class="text-sm text-gray-600">Écoles affectées</p>
           </div>
           <div class="rounded-lg bg-red-50 p-4 text-center">
             <p class="text-3xl font-bold text-red-600">{stats_classes_affected}</p>
-            <p class="text-sm text-gray-600">Classes Affected</p>
+            <p class="text-sm text-gray-600">Classes affectées</p>
           </div>
         </div>
       </Card.Content>

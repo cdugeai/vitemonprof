@@ -1,46 +1,61 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { Button } from '$lib/components/ui/button';
+  import BookOpen from '@lucide/svelte/icons/book-open';
 </script>
 
-<nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+<nav class="border-b bg-white shadow-sm">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2">
-      <!-- Logo/Title -->
-      <div class="shrink-0">
-        <a href="/" class="text-2xl font-bold transition hover:text-blue-100"> ViteMonProf </a>
+    <!-- Header Row: Logo and Region -->
+    <div class="flex min-h-16 items-center justify-between py-2">
+      <!-- Logo and Brand -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <BookOpen class="h-5 w-5" />
+        </div>
+        <div class="flex flex-col">
+          <a href="/" class="text-lg font-bold text-gray-900 transition hover:text-primary">
+            ViteMonProf
+          </a>
+          <span class="text-xs text-gray-600">Suivre les heures manquées</span>
+        </div>
       </div>
 
-      <!-- Navigation Links -->
-      <div class="flex flex-wrap gap-2">
-        <Button
-          variant={$page.url.pathname === '/' ? 'default' : 'ghost'}
-          class={$page.url.pathname === '/'
-            ? ''
-            : 'text-white hover:bg-blue-500/20 hover:text-white'}
-          href="/"
-        >
-          Home
-        </Button>
-        <Button
-          variant={$page.url.pathname === '/dashboard' ? 'default' : 'ghost'}
-          class={$page.url.pathname === '/dashboard'
-            ? ''
-            : 'text-white hover:bg-blue-500/20 hover:text-white'}
-          href="/dashboard"
-        >
-          Dashboard
-        </Button>
-        <Button
-          variant={$page.url.pathname === '/about' ? 'default' : 'ghost'}
-          class={$page.url.pathname === '/about'
-            ? ''
-            : 'text-white hover:bg-blue-500/20 hover:text-white'}
-          href="/about"
-        >
-          About
-        </Button>
+      <!-- Region Badge -->
+      <div class="shrink-0 rounded-full bg-amber-100 px-4 py-1.5 text-sm font-medium text-amber-900">
+        France
       </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="flex flex-wrap gap-2 border-t py-2">
+      <Button
+        variant={$page.url.pathname === '/' ? 'default' : 'ghost'}
+        class={$page.url.pathname === '/'
+          ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+          : 'text-gray-700 hover:bg-gray-100'}
+        href="/"
+      >
+        Accueil
+      </Button>
+      <Button
+        variant={$page.url.pathname === '/dashboard' ? 'default' : 'ghost'}
+        class={$page.url.pathname === '/dashboard'
+          ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+          : 'text-gray-700 hover:bg-gray-100'}
+        href="/dashboard"
+      >
+        Tableau de bord
+      </Button>
+      <Button
+        variant={$page.url.pathname === '/about' ? 'default' : 'ghost'}
+        class={$page.url.pathname === '/about'
+          ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+          : 'text-gray-700 hover:bg-gray-100'}
+        href="/about"
+      >
+        À propos
+      </Button>
     </div>
   </div>
 </nav>

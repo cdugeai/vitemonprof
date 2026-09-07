@@ -15,7 +15,7 @@
   </main>
   <footer class="bg-gray-800 py-8 text-white">
     <div class="mx-auto max-w-7xl px-4 text-center">
-      <p>&copy; 2026 ViteMonProf. Track missed hours, improve education.</p>
+      <p>&copy; 2026 ViteMonProf. Suivre les heures manquées, améliorer l'éducation.</p>
     </div>
   </footer>
 </div>
