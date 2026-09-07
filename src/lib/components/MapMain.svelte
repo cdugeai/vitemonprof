@@ -2,16 +2,7 @@
   import 'svelte-maplibre-gl/vite'; // Required only for GL JS v6+
   import { MapLibre, NavigationControl, ScaleControl, GlobeControl, GeoJSONSource, CircleLayer } from 'svelte-maplibre-gl';
   import { onMount } from 'svelte';
-
-  interface School {
-    id: string;
-    name: string;
-    address: string;
-    city: string;
-    postalCode: string;
-    latitude: number;
-    longitude: number;
-  }
+  import type { School } from '$lib/types/school';
 
   let schools = $state<School[]>([]);
   let geoJsonData = $state({

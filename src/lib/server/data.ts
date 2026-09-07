@@ -1,15 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-
-export interface School {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  postalCode: string;
-  latitude: number;
-  longitude: number;
-}
+import type { School } from '$lib/types/school';
 
 let cachedSchools: School[] | null = null;
 
