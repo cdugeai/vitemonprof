@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
+  import Seo from '$lib/components/Seo.svelte';
   import type { School } from '$lib/types/school';
   import RecentReports from '$lib/components/RecentReports.svelte';
   import type { PageProps, SubmitFunction } from './$types';
@@ -94,9 +95,7 @@
   );
 </script>
 
-<svelte:head>
-  <title>Accueil — ViteMonProf</title>
-</svelte:head>
+<Seo title="Le suivi des absences de courte durée" />
 
 <div class="mx-auto max-w-7xl px-4 py-8 md:px-8">
   <!-- Hero Section -->

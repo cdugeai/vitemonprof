@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
+  import Seo from '$lib/components/Seo.svelte';
 
   /**
    * The one address the public can reach the publisher at. It has to be a real,
@@ -14,16 +15,14 @@
   const LAST_UPDATED = '31 août 2026';
 </script>
 
-<svelte:head>
-  <title>Mentions légales — ViteMonProf</title>
-  <meta
-    name="description"
-    content="Mentions légales de ViteMonProf : éditeur, directeur de la publication, hébergeur, sources de données et propriété intellectuelle."
-  />
-  <!-- Boilerplate that would only dilute the crawl budget and compete with the pages
-       that matter. `follow` is deliberate: the outbound links stay meaningful. -->
-  <meta name="robots" content="noindex, follow" />
-</svelte:head>
+<!-- `noindex` because this is boilerplate that would only dilute the crawl budget and
+     compete with the pages that matter. `follow` is deliberate: the outbound links stay
+     meaningful. -->
+<Seo
+  title="Mentions légales"
+  description="Mentions légales de ViteMonProf : éditeur, directeur de la publication, hébergeur, sources de données et propriété intellectuelle."
+  noindex
+/>
 
 <div class="mx-auto max-w-4xl px-4 py-12">
   <h1 class="mb-2 text-4xl font-bold">Mentions légales</h1>
