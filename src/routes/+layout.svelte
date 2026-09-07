@@ -45,20 +45,29 @@
   <footer class="bg-gray-800 py-8 text-white">
     <div class="mx-auto max-w-7xl space-y-3 px-4 text-center">
       <nav class="text-sm text-gray-300">
-        <a class="hover:text-white hover:underline" href={resolve('/mentions-legales')}>
-          Mentions légales
-        </a>
-        <span>·</span>
-        <a class="hover:text-white hover:underline" href={'mailto:' + CONTACT_EMAIL}>
-          Nous écrire
-        </a>
-        <span>·</span>
         <a
           class="hover:text-white hover:underline"
           target="_blank"
           href="https://www.data.gouv.fr/datasets/vitemonprof-soumissions"
         >
           Télécharger les données
+        </a>
+        <span>·</span>
+        <a class="hover:text-white hover:underline" href={'mailto:' + CONTACT_EMAIL}>
+          Nous écrire
+        </a>
+
+        <span>·</span>
+        <a
+          href="https://github.com/cdugeai/vitemonprof"
+          target="_blank"
+          class="hover:text-white hover:underline"
+        >
+          Github
+        </a>
+        <span>·</span>
+        <a class="hover:text-white hover:underline" href={resolve('/mentions-legales')}>
+          Mentions légales
         </a>
         <p>&copy; 2026 ViteMonProf</p>
       </nav>
