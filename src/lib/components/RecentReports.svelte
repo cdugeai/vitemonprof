@@ -7,6 +7,7 @@
   import type { School } from '$lib/types/school';
   import { formatRelativeTime } from '$lib/utils';
   import Inbox from '@lucide/svelte/icons/inbox';
+  import Users from '@lucide/svelte/icons/users';
   import { fetchGzipJson } from '$lib/gzip-json';
 
   interface Props {
@@ -111,6 +112,23 @@
 
   /** Exact timestamp for the tooltip, so the friendly label never costs precision. */
   const exactDate = (iso: string) => new Date(iso).toLocaleString('fr-FR');
+
+  /**
+   * Corroboration gets a colour where the discipline does not, for the same
+   * reason `nbHours` does: it is an ordered quantity that means something.
+   *
+   * Two steps, not a ramp. A second reporter is the whole qualitative jump —
+   * from one anonymous claim to two people agreeing — so it gets the emphasis;
+   * beyond three the extra confidence is real but marginal, and a widening ramp
+   * would compete with the hours tile for the eye. Below two there is no badge
+   * at all: "signalé 1 fois" is noise on every row, and an absent badge already
+   * says it.
+   */
+  function corroborationTone(count: number): string {
+    return count >= 3
+      ? 'border-emerald-600/30 bg-emerald-50 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-200'
+      : 'border-sky-600/30 bg-sky-50 text-sky-900 dark:bg-sky-500/15 dark:text-sky-200';
+  }
 </script>
 
 <Card.Root>
@@ -205,6 +223,21 @@
                 <Badge variant="secondary">{classLabel(mh)}</Badge>
                 {#if mh.discipline}
                   <Badge variant="outline">{disciplineLabel(mh.discipline)}</Badge>
+                {/if}
+                <!--
+                  `title` rather than a longer label: the badge has to survive next
+                  to two others on a narrow phone, and the sentence explaining what
+                  corroboration *means* is worth reading once, not on every row.
+                -->
+                {#if mh.corroborations > 1}
+                  <Badge
+                    variant="outline"
+                    class={corroborationTone(mh.corroborations)}
+                    title="{mh.corroborations} personnes ont signalé cette même heure manquée (même établissement, même classe, même jour)."
+                  >
+                    <Users class="size-3" aria-hidden="true" />
+                    Signalé {mh.corroborations} fois
+                  </Badge>
                 {/if}
                 <span class="sr-only">
                   {mh.nbHours} heure{mh.nbHours > 1 ? 's' : ''} manquée{mh.nbHours > 1 ? 's' : ''}

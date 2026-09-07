@@ -63,6 +63,9 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
           // `created_at_ms` arrives as a bigint, which `Number` narrows safely:
           // epoch millis stay exact well past the year 275760.
           createdAt: new Date(Number(r[LIST_ALIAS.createdAtMs])).toISOString(),
+          // `count(*)` is a bigint/numeric on the wire in both engines, same as
+          // the stats aggregates — hence `Number` rather than a bare read.
+          corroborations: Number(r[LIST_ALIAS.corroborations]),
         } satisfies MissedHour;
       });
     },

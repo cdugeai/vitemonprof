@@ -97,7 +97,25 @@ export const LIST_ALIAS = {
   date: 'date',
   nbHours: 'nb_hours',
   createdAtMs: 'created_at_ms',
+  corroborations: 'corroborations',
 } as const;
+
+/**
+ * The column spelling of `CORROBORATION_KEY` — the partition that decides which
+ * rows describe the same missed hour.
+ *
+ * `satisfies` pins each name to a real column of `missed_hour` as generated from
+ * the live database, so a rename that leaves this behind fails the build rather
+ * than silently partitioning by nothing.
+ */
+const CORROBORATION_COLUMNS = [
+  'school_id',
+  'class',
+  'class_group',
+  'date',
+  'discipline',
+  'nb_hours',
+] as const satisfies readonly (keyof Database['missed_hour'])[];
 
 /**
  * All reports, newest first.
@@ -111,6 +129,9 @@ export const LIST_ALIAS = {
  * returned a `DuckDBUUIDValue`. Both drivers hand back a plain number for
  * `integer`, so the column is selected as-is. One fewer cast is a small bonus of
  * the narrower key.
+ *
+ * `corroborations` rides along as a window function rather than a separate query:
+ * see `CORROBORATION_COLUMNS`.
  */
 export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
   let query = db
@@ -124,6 +145,15 @@ export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
       sql<string>`${eb.ref('date')}::text`.as(LIST_ALIAS.date),
       'nb_hours',
       createdAtMillis(eb, dialect).as(LIST_ALIAS.createdAtMs),
+      // A window function, not a self-join or a second round trip: `count(*) over
+      // (partition by …)` is evaluated over the *whole* filtered table and only
+      // then projected onto each row, so the count stays correct under the
+      // `limit` below — the five rows the homepage renders still know how many
+      // reports exist behind each of them.
+      eb.fn
+        .countAll()
+        .over((ob) => ob.partitionBy([...CORROBORATION_COLUMNS]))
+        .as(LIST_ALIAS.corroborations),
     ])
     .orderBy('created_at', 'desc');
 

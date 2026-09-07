@@ -12,6 +12,24 @@ import type { Discipline } from '$lib/disciplines';
  */
 export interface MissedHour extends NewMissedHour {
   id: number;
+
+  /**
+   * How many reports — this one included — name the same missed hour.
+   *
+   * `1` means nobody else reported it; `3` means three people independently
+   * described the same class losing the same day. Since every reporter here is
+   * anonymous and unverified, agreement between them is the only evidence the
+   * app has that a report is real, which is why the number is worth surfacing
+   * rather than leaving implicit in the row count.
+   *
+   * **Computed on read, never stored.** There is no `corroborations` column: it
+   * is a `count(*) over (partition by …)` in `list()`, and the memory backend
+   * counts the same key in JS. Storing it would mean every insert had to update
+   * the sibling rows it corroborates, which is a write amplification and a
+   * consistency risk in exchange for an aggregate the database computes for
+   * free.
+   */
+  corroborations: number;
 }
 
 /**

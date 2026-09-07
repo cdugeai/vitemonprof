@@ -97,7 +97,7 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
     // number a backend hands out is its own business (Postgres and DuckDB share
     // a sequence definition, the memory repo counts), but *that* it hands out a
     // number, and that no other field is touched in transit, is the contract.
-    expect(await repo.list()).toEqual([{ ...stored, id: expect.any(Number) }]);
+    expect(await repo.list()).toEqual([{ ...stored, id: expect.any(Number), corroborations: 1 }]);
   });
 
   it('assigns ids itself rather than taking one from the caller', async () => {
@@ -177,6 +177,135 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
 
       expect(stats.total_hours).toBe(12);
       expect(stats.total_hours_last_7d).toBe(5);
+    });
+  });
+
+  /**
+   * The number is the app's only evidence that an anonymous report is real, so
+   * every rule about what counts as "the same missed hour" is pinned here rather
+   * than in one backend's own suite — a SQL `partition by` and a JS `Map` key are
+   * two very different ways to get this subtly wrong.
+   */
+  describe('corroborations', () => {
+    it('is 1 for a report nobody else made', async () => {
+      const repo = await create();
+
+      await repo.add(report());
+
+      expect((await repo.list())[0].corroborations).toBe(1);
+    });
+
+    it('counts every report describing the same hour', async () => {
+      const repo = await create();
+
+      // Identical in all six keyed fields — the same class and group, at the
+      // same school, on the same day, losing the same two hours of maths.
+      const hour = {
+        schoolId: 'A',
+        class: '6e',
+        classGroup: 'B' as const,
+        date_: '2026-08-17',
+        discipline: 'maths' as const,
+        nbHours: 2,
+      };
+
+      await repo.add(report(hour));
+      await repo.add(report(hour));
+      await repo.add(report(hour));
+
+      // Every row carries the total, itself included — not "how many others".
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([3, 3, 3]);
+    });
+
+    it.each([
+      ['school', { schoolId: 'B' }],
+      ['class', { class: '5e' }],
+      ['date', { date_: '2026-08-18' }],
+    ])('does not corroborate across a different %s', async (_field, difference) => {
+      const repo = await create();
+
+      await repo.add(report({ schoolId: 'A', class: '6e', date_: '2026-08-17' }));
+      await repo.add(report({ schoolId: 'A', class: '6e', date_: '2026-08-17', ...difference }));
+
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([1, 1]);
+    });
+
+    it.each([
+      ['discipline', { discipline: 'hist-geo' as const }],
+      ['hour count', { nbHours: 4 }],
+      ['class group', { classGroup: 'D' as const }],
+    ])('does not corroborate across a different %s', async (_field, difference) => {
+      const repo = await create();
+
+      // The key identifies one specific hour, not a day. A maths hour and a
+      // history hour lost on the same morning are two different hours that
+      // happen to share a date, and « 6e C » and « 6e D » are different rooms of
+      // different pupils. Counting any of them together would report them as
+      // corroborating each other when they do not.
+      await repo.add(report({ discipline: 'maths', nbHours: 2, classGroup: 'C' }));
+      await repo.add(report({ discipline: 'maths', nbHours: 2, classGroup: 'C', ...difference }));
+
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([1, 1]);
+    });
+
+    it('corroborates two reports that both left the class group blank', async () => {
+      const repo = await create();
+
+      // Same null handling as the discipline: SQL `partition by` groups nulls
+      // together, and the JSON-encoded key has to agree. The group is optional
+      // on the form, so two blanks is a common shape.
+      await repo.add(report({ classGroup: null }));
+      await repo.add(report({ classGroup: null }));
+
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([2, 2]);
+    });
+
+    it('keeps a report with no class group separate from one that named it', async () => {
+      const repo = await create();
+
+      await repo.add(report({ classGroup: null }));
+      await repo.add(report({ classGroup: 'C' }));
+
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([1, 1]);
+    });
+
+    it('counts over the whole table, not just the rows returned', async () => {
+      const repo = await create();
+
+      for (let i = 0; i < 4; i++) {
+        await repo.add(report({ createdAt: daysAgo(i + 1) }));
+      }
+
+      // One row asked for, but it knows all four reports exist behind it. A
+      // count computed after the limit would say 1 and quietly understate every
+      // paged view in the app.
+      const [row] = await repo.list(1);
+
+      expect(row.corroborations).toBe(4);
+    });
+
+    it('keeps a report with no discipline separate from one that named a subject', async () => {
+      const repo = await create();
+
+      await repo.add(report({ discipline: null }));
+      await repo.add(report({ discipline: 'maths' }));
+
+      // "Subject not given" is not a claim that the subject was maths, so the
+      // two are not evidence for each other. The discipline is optional on the
+      // form, which makes this the most common way a count stays at 1.
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([1, 1]);
+    });
+
+    it('corroborates two reports that both left the discipline blank', async () => {
+      const repo = await create();
+
+      await repo.add(report({ discipline: null, nbHours: 2 }));
+      await repo.add(report({ discipline: null, nbHours: 2 }));
+
+      // The half of null handling that is easy to get wrong in one backend and
+      // not the other: SQL `partition by` groups nulls *together*, and the
+      // JSON-encoded key has to agree.
+      expect((await repo.list()).map((r) => r.corroborations)).toEqual([2, 2]);
     });
   });
 });
