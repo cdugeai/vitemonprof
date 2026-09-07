@@ -14,7 +14,7 @@ async function submitReport(page: Page, fields: Record<string, string>) {
 }
 
 /**
- * The « Total des heures manquées » tile, as a number.
+ * The « Heures non remplacées » tile, as a number.
  *
  * Read rather than asserted against a fixed value: the suite shares one
  * in-memory store, so every spec that submits a report moves this. What this
@@ -26,7 +26,7 @@ async function totalHours(page: Page): Promise<number> {
   // The tile is two sibling `<p>`s: the number, then its label. Anchoring on the
   // label and stepping back is stabler than a class selector.
   const value = page
-    .getByText('Total des heures manquées')
+    .getByText('Heures non remplacées')
     .locator('xpath=preceding-sibling::p[1]');
 
   // The stats are streamed, so the tile renders '-' until the query lands.

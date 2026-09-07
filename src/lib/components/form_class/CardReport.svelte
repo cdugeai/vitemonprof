@@ -101,9 +101,9 @@
         </span>
 
         <div class="flex flex-col">
-          <Card.Title>Signaler une classe manquée</Card.Title>
+          <Card.Title>Signaler une heure non remplacée</Card.Title>
           <Card.Description>
-            Enregistrez quand un cours n'a pas pu se dérouler parce que le professeur était absent.
+            Renseignez ici un cours qui n'a pas eu lieu <b>et</b> n'a pas été remplacé.
           </Card.Description>
         </div>
       </div>
@@ -153,7 +153,7 @@
 
       <Button type="submit" class="mb-3 w-full rounded-xl p-5" disabled={!canSubmit || submitting}>
         <Send />
-        <span>{submitting ? 'Envoi en cours…' : 'Envoyer le rapport'}</span>
+        <span>{submitting ? 'Envoi en cours…' : 'Envoyer le signalement'}</span>
       </Button>
     </Card.Content>
   </Card.Root>

@@ -65,14 +65,16 @@
   <section class="mb-6">
     <div class="bg-mybeige-bg rounded-lg">
       <p class="text-primary mb-2 text-sm font-semibold tracking-wide uppercase">
-        Moniteur national des absences en classe
+        Observatoire participatif
       </p>
       <h1 class="text-foreground mb-4 text-5xl font-bold md:text-5xl">
-        Le suivi des absences non remplacées.
+        Le suivi des absences de courte durée.
       </h1>
       <p class="text-muted-foreground text-lg">
-        Les parents et les élèves peuvent enregistrer les absences des enseignants et contribuer à
-        une image plus claire des apprentissages perdus dans votre communauté scolaire.
+        La comptabilisation des absences de courte durée non remplacées est une donnée difficile à
+        obtenir et consolider au niveau national. ViteMonProf rassemble les signalements des
+        familles, élèves et personnels pour en donner une vue d'ensemble — dans votre établissement,
+        votre département et partout en France.
       </p>
     </div>
   </section>
@@ -117,10 +119,10 @@
       {#if showSuccess}
         <Alert.Root class="mt-4 border-green-600/30 bg-green-50 text-green-900">
           <CircleCheck class="text-green-600" />
-          <Alert.Title>Rapport enregistré</Alert.Title>
+          <Alert.Title>Merci, c'est enregistré</Alert.Title>
           <Alert.Description class="text-green-800">
-            Merci ! Votre signalement a bien été pris en compte et apparaît maintenant dans les
-            rapports récents.
+            Votre signalement rejoint ceux des autres contributeurs et apparaît dès maintenant dans
+            les signalements récents.
           </Alert.Description>
         </Alert.Root>
       {/if}
@@ -128,7 +130,7 @@
       {#if form?.error}
         <Alert.Root variant="destructive" class="mt-4">
           <CircleAlert />
-          <Alert.Title>Le rapport n'a pas pu être envoyé</Alert.Title>
+          <Alert.Title>Le signalement n'a pas pu être envoyé</Alert.Title>
           <Alert.Description>{form.error}</Alert.Description>
         </Alert.Root>
       {/if}
@@ -145,8 +147,10 @@
     <section>
       <Card.Root>
         <Card.Header>
-          <Card.Title>Aperçu des statistiques</Card.Title>
-          <Card.Description>Quelques statistiques à propos des signalements.</Card.Description>
+          <Card.Title>Ce que disent les signalements</Card.Title>
+          <Card.Description>
+            Une heure signalée par plusieurs personnes n'est comptée qu'une fois.
+          </Card.Description>
         </Card.Header>
         <Card.Content>
           <!--
@@ -183,19 +187,19 @@
   <div class="grid grid-cols-2 gap-4">
     <div class="rounded-lg bg-blue-50 p-4 text-center">
       <p class="text-3xl font-bold text-blue-600">{total}</p>
-      <p class="text-sm text-gray-600">Total des heures manquées</p>
+      <p class="text-sm text-gray-600">Heures non remplacées</p>
     </div>
     <div class="rounded-lg bg-green-50 p-4 text-center">
       <p class="text-3xl font-bold text-green-600">{last7d}</p>
-      <p class="text-sm text-gray-600">Heures rapportées la semaine dernière</p>
+      <p class="text-sm text-gray-600">Signalées ces 7 derniers jours</p>
     </div>
     <div class="rounded-lg bg-yellow-50 p-4 text-center">
       <p class="text-3xl font-bold text-yellow-600">{schools}</p>
-      <p class="text-sm text-gray-600">Écoles affectées</p>
+      <p class="text-sm text-gray-600">Établissements concernés</p>
     </div>
     <div class="rounded-lg bg-red-50 p-4 text-center">
       <p class="text-3xl font-bold text-red-600">{classes}</p>
-      <p class="text-sm text-gray-600">Classes affectées</p>
+      <p class="text-sm text-gray-600">Classes concernées</p>
     </div>
   </div>
 {/snippet}

@@ -19,7 +19,9 @@
           <a href="/" class="hover:text-primary text-lg font-bold text-gray-900 transition">
             ViteMonProf
           </a>
-          <span class="text-xs text-gray-600">Suivre les heures manquées</span>
+          <span class="text-xs text-gray-600"
+            >L'observatoire participatif des heures non remplacées</span
+          >
         </div>
       </div>
 
