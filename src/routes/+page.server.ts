@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { missedHourRepo } from '$lib/server/repo';
 import { isClassGroup } from '$lib/classGroups';
+import { isDiscipline } from '$lib/disciplines';
 import { randomUUID } from 'crypto';
 
 /**
@@ -39,6 +40,7 @@ export const actions = {
     const schoolId = formData.get('schoolId');
     const className = formData.get('class');
     const classGroup = formData.get('classGroup');
+    const discipline = formData.get('discipline');
     const date = formData.get('date');
     const nbHours = formData.get('nbHours');
 
@@ -53,6 +55,13 @@ export const actions = {
 
     if (classGroup && !isClassGroup(String(classGroup))) {
       return fail(400, { error: 'Class group must be one of A-G (or 1-7)' });
+    }
+
+    // Optional like the group, and rejected the same way when present but bogus:
+    // an id that is not in the mapping cannot be rendered back to a label, so
+    // storing it would put a permanently unreadable row in the table.
+    if (discipline && !isDiscipline(String(discipline))) {
+      return fail(400, { error: 'Unknown discipline' });
     }
 
     if (!date) {
@@ -77,6 +86,7 @@ export const actions = {
       // The empty string is what a form sends for "nothing chosen"; the store only
       // speaks `null`, so the collapse happens here at the boundary.
       classGroup: isClassGroup(classGroup) ? classGroup : null,
+      discipline: isDiscipline(discipline) ? discipline : null,
       date_: String(date),
       nbHours: hoursNum,
       createdAt: new Date().toISOString(),

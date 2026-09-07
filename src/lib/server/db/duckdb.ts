@@ -26,10 +26,28 @@ const SCHEMA_DDL = `
     "school_id"  text not null,
     "class"      text not null,
     "class_group" text,
+    "discipline" text,
     "date"       date not null,
     "nb_hours"   integer not null,
-    "created_at" timestamp with time zone not null default now()
+    -- No \`default now()\`, unlike the Postgres schema. That default is what makes
+    -- an \`alter table ... add column\` unreplayable: the ALTER goes into the WAL,
+    -- and reopening the file re-binds the table's defaults during replay, before
+    -- there is a database context for \`now()\` to resolve against. DuckDB 1.5.5
+    -- raises an INTERNAL error and the file will not open at all. Nothing here
+    -- relies on the default — \`add()\` always supplies \`created_at\` — so the
+    -- safe schema is the one without it.
+    "created_at" timestamp with time zone not null
   );
+
+  -- Columns added after a database file already exists. \`create table if not
+  -- exists\` above only ever runs on a *new* file, so without these an existing
+  -- local .duckdb would silently keep the old shape and every insert would fail.
+  -- \`if not exists\` makes each one idempotent, which is what lets this run on
+  -- every connect. This is the poor man's migration table flagged when this
+  -- backend was added — workable while the changes are additive, and the point at
+  -- which it stops being workable is the point this needs a real migration story.
+  alter table missed_hour add column if not exists "class_group" text;
+  alter table missed_hour add column if not exists "discipline" text;
 `;
 
 /**
@@ -61,6 +79,12 @@ async function connect(): Promise<DuckDBConnection> {
   const connection = await instance.connect();
 
   await connection.run(SCHEMA_DDL);
+
+  // Belt and braces with the missing \`default now()\` above: a checkpoint flushes
+  // the WAL into the database file, so there is no ALTER entry left to replay on
+  // the next open. Cheap at this size, and it means a schema change can never
+  // leave a database that refuses to reopen.
+  await connection.run('checkpoint');
 
   return connection;
 }

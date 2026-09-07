@@ -13,12 +13,14 @@
 
   import SelectorClass from './SelectorClass.svelte';
   import SelectorClassGroup from './SelectorClassGroup.svelte';
+  import SelectorDiscipline from './SelectorDiscipline.svelte';
   import SelectorDepartement from './SelectorDepartement.svelte';
   import SelectorSchool from './SelectorSchool.svelte';
   import DatePicker from '../DatePicker.svelte';
   import PresenterSchool from './PresenterSchool.svelte';
   import type { School } from '$lib/types/school';
   import type { ClassGroup } from '$lib/classGroups';
+  import type { Discipline } from '$lib/disciplines';
   import FormHint from './FormHint.svelte';
   import { dateToStr } from '$lib/utils';
   import NumberHoursInput from './NumberHoursInput.svelte';
@@ -27,6 +29,7 @@
     selectedDept?: string;
     selectedClass?: string;
     selectedClassGroup?: ClassGroup;
+    selectedDiscipline?: Discipline;
     selectedSchool?: School;
     selectedDate?: CalendarDate;
     nbHours?: number;
@@ -38,6 +41,7 @@
     selectedDept = $bindable(),
     selectedClass = $bindable(),
     selectedClassGroup = $bindable(),
+    selectedDiscipline = $bindable(),
     selectedSchool = $bindable(),
     selectedDate = $bindable(),
     nbHours = $bindable(),
@@ -123,6 +127,7 @@
         <div class="flex flex-col gap-2">
           <SelectorClass bind:selectedClass />
           <SelectorClassGroup bind:selectedClassGroup />
+          <SelectorDiscipline bind:selectedDiscipline />
           <DatePicker bind:date_={selectedDate} />
           <NumberHoursInput bind:nbHours />
         </div>
