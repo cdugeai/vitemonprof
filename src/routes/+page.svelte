@@ -4,7 +4,7 @@
   import RecentReports from '$lib/components/RecentReports.svelte';
   import type { PageProps } from './$types';
   import { canSubmitForm } from '$lib/utils_form';
-  import { onMount } from 'svelte';
+  import { enhance } from '$app/forms';
   import CardReport from '$lib/components/form_class/CardReport.svelte';
   import { CalendarDate } from '@internationalized/date';
   import { dateToStr } from '$lib/utils';
@@ -15,21 +15,12 @@
   let selectedDept: string | undefined = $state();
   let nbHours: number = $state(1);
 
-  let stats_total_hours = $state('-');
-  let stats_total_hours_last_7d = $state('-');
-  let stats_classes_affected = $state('-');
-  let stats_schools_affected = $state('-');
-
-  // Update stats when available
-  onMount(async () => {
-    let r = await data.missed_hours_stats;
-    stats_total_hours = r.total_hours.toString();
-    stats_total_hours_last_7d = r.total_hours_last_7d.toString();
-    stats_classes_affected = r.classes_affected.toString();
-    stats_schools_affected = r.schools_affected.toString();
-  });
-
   let { data, form }: PageProps = $props();
+
+  // True from the moment the form is submitted until the redirect has been followed and
+  // the page data re-fetched. Guards against the double-submit you'd otherwise get by
+  // tapping "Envoyer" twice while the request is in flight.
+  let submitting = $state(false);
 
   // Client-side guardrail: reuses FormHint's rules so the button and the hint
   // can never disagree. This only improves UX — the server action stays the real
@@ -61,7 +52,24 @@
   </section>
 
   <!-- Main Content Grid -->
-  <form method="POST" class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+  <!--
+    `use:enhance` intercepts the submit and sends it with fetch instead of navigating, so
+    no POST ever lands in the browser's history. The server's 303 is still what makes a
+    hard refresh safe for anyone without JS — the two fixes cover different paths.
+    `update()` applies the result: for a redirect it navigates and re-runs `load`, which
+    is what refreshes the stats and the "rapports récents" list below.
+  -->
+  <form
+    method="POST"
+    class="grid grid-cols-1 gap-8 lg:grid-cols-3"
+    use:enhance={() => {
+      submitting = true;
+      return async ({ update }) => {
+        await update();
+        submitting = false;
+      };
+    }}
+  >
     <!-- Map Section (Left - 2 cols) -->
     <section class="lg:col-span-2">
       <CardReport
@@ -71,7 +79,11 @@
         bind:selectedDate
         bind:nbHours
         {canSubmit}
+        {submitting}
       />
+      {#if form?.error}
+        <p class="mt-2 text-center text-sm text-red-600" role="alert">{form.error}</p>
+      {/if}
       <input type="hidden" name="nbHours" value={nbHours} />
       <input type="hidden" name="dept" value={selectedDept} />
       <input type="hidden" name="class" value={selectedClass} />
@@ -88,24 +100,21 @@
         <Card.Title>Aperçu des statistiques</Card.Title>
       </Card.Header>
       <Card.Content>
-        <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div class="rounded-lg bg-blue-50 p-4 text-center">
-            <p class="text-3xl font-bold text-blue-600">{stats_total_hours}</p>
-            <p class="text-sm text-gray-600">Total des heures manquées</p>
-          </div>
-          <div class="rounded-lg bg-green-50 p-4 text-center">
-            <p class="text-3xl font-bold text-green-600">{stats_total_hours_last_7d}</p>
-            <p class="text-sm text-gray-600">Heures rapportées la semaine dernière</p>
-          </div>
-          <div class="rounded-lg bg-yellow-50 p-4 text-center">
-            <p class="text-3xl font-bold text-yellow-600">{stats_schools_affected}</p>
-            <p class="text-sm text-gray-600">Écoles affectées</p>
-          </div>
-          <div class="rounded-lg bg-red-50 p-4 text-center">
-            <p class="text-3xl font-bold text-red-600">{stats_classes_affected}</p>
-            <p class="text-sm text-gray-600">Classes affectées</p>
-          </div>
-        </div>
+        <!--
+          Awaited in the template rather than in `onMount`: `data.missed_hours_stats` is a
+          streamed promise, and a new one arrives every time `load` re-runs. An `onMount`
+          only ever reads the first one, so the numbers would go stale after a submit.
+        -->
+        {#await data.missed_hours_stats}
+          {@render stats('-', '-', '-', '-')}
+        {:then s}
+          {@render stats(
+            s.total_hours.toString(),
+            s.total_hours_last_7d.toString(),
+            s.schools_affected.toString(),
+            s.classes_affected.toString()
+          )}
+        {/await}
       </Card.Content>
     </Card.Root>
   </section>
@@ -119,3 +128,24 @@
     {/await}
   </section>
 </div>
+
+{#snippet stats(total: string, last7d: string, schools: string, classes: string)}
+  <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div class="rounded-lg bg-blue-50 p-4 text-center">
+      <p class="text-3xl font-bold text-blue-600">{total}</p>
+      <p class="text-sm text-gray-600">Total des heures manquées</p>
+    </div>
+    <div class="rounded-lg bg-green-50 p-4 text-center">
+      <p class="text-3xl font-bold text-green-600">{last7d}</p>
+      <p class="text-sm text-gray-600">Heures rapportées la semaine dernière</p>
+    </div>
+    <div class="rounded-lg bg-yellow-50 p-4 text-center">
+      <p class="text-3xl font-bold text-yellow-600">{schools}</p>
+      <p class="text-sm text-gray-600">Écoles affectées</p>
+    </div>
+    <div class="rounded-lg bg-red-50 p-4 text-center">
+      <p class="text-3xl font-bold text-red-600">{classes}</p>
+      <p class="text-sm text-gray-600">Classes affectées</p>
+    </div>
+  </div>
+{/snippet}

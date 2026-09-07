@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { addMissedHour, computeStats, getMissedHour } from '$lib/server/db_tmp';
 import { randomUUID } from 'crypto';
@@ -65,6 +65,10 @@ export const actions = {
       schoolId: entry.schoolId.toString(),
     });
 
-    return { success: true, entry };
+    // Post/Redirect/Get: answer the POST with a 303 rather than HTML. Without it the
+    // browser's history entry for `/` stays a POST, so a refresh replays the submission
+    // ("Confirm Form Resubmission") and inserts the report a second time. The 303 turns
+    // that entry into a plain GET, which is safe to reload as many times as you like.
+    redirect(303, '/');
   },
 } satisfies Actions;
