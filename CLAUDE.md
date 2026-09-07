@@ -65,13 +65,43 @@ plain Node script (`scripts/migrate.ts`). `drizzle-kit push` is gone — it diff
 explicit, ordered, and reversible.
 
 - `npm run db:migrate` — apply everything pending
-- `npm run db:migrate:status` — show applied vs pending
+- `npm run db:migrate:status` — applied vs pending, plus any orphans
 - `npm run db:migrate:down` — roll back one migration
+- `npm run db:types` — regenerate `db/types.generated.ts` from the database
+- `npm run db:diff` — compare the migrated schema against the real one (read-only)
 
-To add one: create `migrations/00N_what_it_does.ts` exporting `up` and `down`,
-then mirror the change in `src/lib/server/db/schema.ts` — that file is now a
-_description_ used by better-auth's Drizzle adapter and by the query layer's
-column-name check, and editing it alone changes no database.
+To add one:
+
+1. write `migrations/00N_what_it_does.ts` exporting `up` and `down`
+2. `npm run db:migrate`
+3. `npm run db:types`
+4. wire the column through: domain type → `repo/sql/` → both repos → action → UI.
+   The compiler names every site once step 3 has run.
+5. **DuckDB has no migrations.** Kysely has no DuckDB dialect, so that backend
+   carries its own DDL in `db/duckdbSchema.ts` and needs the column added _twice_:
+   in `create table` (new files) and as `add column if not exists` (existing ones).
+
+### There is no migration generator
+
+Kysely has no equivalent of `prisma migrate dev` or `drizzle-kit generate`,
+because it has no declarative schema to diff _from_ — the migrations are the
+declaration. `kysely-ctl migrate:make` scaffolds an empty stub and nothing more;
+`kysely-codegen` runs the other way (database → types). Advice to "just use
+`migra`" is stale: it no longer imports on modern Python.
+
+What replaces the generator is a checking loop:
+
+- **`npm run db:types`** — the compiler then lists every call site to update, so
+  the cost of a missed one is a build error rather than a runtime failure.
+- **`npm run db:diff`** — builds nothing, only reads: it compares the database
+  built from `migrations/` against the real one. Empty output means the
+  migrations reproduce it exactly; anything listed is a migration you have not
+  written, or drift applied outside them.
+
+Never renumber or edit a migration that has already run anywhere — the ledger in
+`kysely_migration` keys on the filename. Deleting an applied migration's file
+makes `db:migrate` fail with `corrupted migrations`; `db:migrate:status` reports
+it as `⚠ orphaned`. Fix mistakes with a new migration, not by editing an old one.
 
 No ts-node and no dotenv package: Node 24 strips the types and reads `.env` via
 `--env-file`. The only added dependency is `kysely-postgres-js`, Kysely's dialect
