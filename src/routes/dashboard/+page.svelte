@@ -3,6 +3,10 @@
   import * as Card from '$lib/components/ui/card';
 </script>
 
+<svelte:head>
+  <title>Tableau de bord — ViteMonProf</title>
+</svelte:head>
+
 <div class="mx-auto max-w-7xl px-4 py-8">
   <h1 class="mb-8 text-3xl font-bold">Dashboard</h1>
 

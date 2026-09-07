@@ -232,19 +232,19 @@ come from the registry, not the form.
 
 ## §6 — P2 · Content, SEO, and correctness of what ships
 
-- [ ] **No page has a `<title>`.** `src/routes/+layout.svelte` sets only the
+- [x] **No page has a `<title>`.** `src/routes/+layout.svelte` sets only the
       favicon and a font preload. Add `<svelte:head>` with title + meta description
       per route, and Open Graph tags for link previews.
-- [ ] **`<html lang="en">`** in `src/app.html:2` on a French-language app → `fr`.
+- [x] **`<html lang="en">`** in `src/app.html:2` on a French-language app → `fr`.
 - [ ] **Favicon is still the Svelte logo** (`src/lib/assets/favicon.svg` — its own
       `<title>` says `svelte-logo`).
-- [ ] **Typo in the H1**: "abscences" → "absences", `src/routes/+page.svelte:68`.
+- [x] **Typo in the H1**: "abscences" → "absences", `src/routes/+page.svelte:68`.
       `e2e/smoke.spec.ts:6` asserts on the misspelling and must change with it.
 - [ ] **Mixed languages.** `/about` and `/dashboard` are entirely in English while
       the rest of the app is French. Translate them.
 - [ ] **`/about` is placeholder copy** — "Send us an email or fill out our contact
       form" with neither an address nor a form.
-- [ ] **No `+error.svelte`.** A 404 or a 500 currently renders SvelteKit's default
+- [x] **No `+error.svelte`.** A 404 or a 500 currently renders SvelteKit's default
       black-and-white page with no navigation back.
 - [ ] **`src/lib/components/Navbar.svelte:2` imports `page` from `$app/stores`** —
       the deprecated store API. Every other file uses `$app/state` (see
