@@ -107,16 +107,71 @@ describe('departementFromPostalCode', () => {
 
     it.each([
       ['97500', '975'],
-      ['97133', '971'],
-      ['97700', '977'],
-      ['97800', '978'],
       ['98600', '986'],
       ['98700', '987'],
       ['98800', '988'],
     ])('maps the less-quoted %s to %s', (postal, expected) => {
-      // 977 and 978 in particular: "from 97600 up is Mayotte" would fold
-      // Saint-Barthélemy and Saint-Martin — 42 schools — into 976.
       expect(departementFromPostalCode(postal)).toBe(expected);
+    });
+
+    describe('the Antilles collectivités, which do not name themselves', () => {
+      // Reported from the field: `9710022X` — Collège Mont des Accords, ST
+      // MARTIN — carries postal code 97150, which the plain three-digit rule
+      // read as 971 (Guadeloupe). Saint-Barthélemy and Saint-Martin were carved
+      // out of Guadeloupe in 2007 and kept the postal codes they already had,
+      // so their codes still sit inside Guadeloupe's 971xx block. 41 schools
+      // are affected.
+      it.each([
+        ['97150', '978', 'Saint-Martin — Marigot, incl. Collège Mont des Accords'],
+        ['97052', '978', 'Saint-Martin — CEDEX'],
+        ['97133', '977', 'Saint-Barthélemy — Gustavia'],
+        ['97095', '977', 'Saint-Barthélemy — CEDEX'],
+      ])('maps %s to %s (%s)', (postal, expected) => {
+        expect(departementFromPostalCode(postal)).toBe(expected);
+      });
+
+      it('does not read 97150 as Guadeloupe', () => {
+        // The specific regression. `971` is what the three-digit rule returns,
+        // and it is wrong for every school in Saint-Martin.
+        expect(departementFromPostalCode('97150')).not.toBe('971');
+      });
+
+      it('still reads the rest of the 971xx block as Guadeloupe', () => {
+        // The fix must be exactly four codes wide: 404 schools genuinely are in
+        // Guadeloupe with a 971xx code, and an over-broad rule would move them.
+        expect(departementFromPostalCode('97100')).toBe('971');
+        expect(departementFromPostalCode('97139')).toBe('971');
+        expect(departementFromPostalCode('97151')).toBe('971');
+        expect(departementFromPostalCode('97190')).toBe('971');
+      });
+
+      it('reads the 978xx block as La Réunion, not Saint-Martin', () => {
+        // La Réunion's CEDEX codes. A three-digit rule calls them 978, which is
+        // Saint-Martin — 29 schools, all of them 9,000 km off.
+        expect(departementFromPostalCode('97800')).toBe('974');
+        expect(departementFromPostalCode('97899')).toBe('974');
+      });
+    });
+  });
+
+  describe('known limitations, measured against the registry', () => {
+    // 15 schools out of 63,985 (0.023%) where no prefix rule can reach the right
+    // answer. Pinned rather than hidden: if a future edit "fixes" one of these,
+    // it has almost certainly broken a far larger set, and this is where that
+    // shows up.
+    it('gets Corsica wrong where the two départements share a prefix', () => {
+      // Real Corsican codes interleave: 20537 and 20700 are Corse-du-Sud even
+      // though they sit above the 20200 boundary.
+      expect(departementFromPostalCode('20537')).toBe('2B'); // INSEE says 2A
+      expect(departementFromPostalCode('20700')).toBe('2B'); // INSEE says 2A
+    });
+
+    it('gets métropole codes that straddle a border wrong', () => {
+      // The post office routes by delivery office, not by administrative
+      // boundary, so a handful of communes are served from the next département.
+      expect(departementFromPostalCode('05130')).toBe('05'); // INSEE says 04
+      expect(departementFromPostalCode('33220')).toBe('33'); // INSEE says 24
+      expect(departementFromPostalCode('01200')).toBe('01'); // INSEE says 74
     });
   });
 
@@ -140,6 +195,13 @@ describe('departementFromPostalCode', () => {
 });
 
 describe('departementFromInsee', () => {
+  it('is the authoritative source, and disagrees with the postal rule where it must', () => {
+    // Collège Mont des Accords again. The registry states 978 outright; the
+    // postal code cannot express it. This is why `data.ts` reads the INSEE
+    // column first and treats the postal rule as a fallback.
+    expect(departementFromInsee('978')).toBe('978');
+  });
+
   it.each([
     ['001', '01'],
     ['075', '75'],
