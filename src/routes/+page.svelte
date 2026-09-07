@@ -46,12 +46,12 @@
 <div class="mx-auto max-w-7xl px-4 py-8">
   <!-- Hero Section -->
   <section class="mb-6">
-    <div class="bg-mybeige-bg rounded-lg p-8">
+    <div class="bg-mybeige-bg rounded-lg p-4 md:p-8">
       <p class="text-primary mb-2 text-sm font-semibold tracking-wide uppercase">
         Moniteur national des absences en classe
       </p>
-      <h1 class="text-foreground mb-4 text-5xl font-bold">
-        Chaque classe manquée mérite d'être comptabilisée.
+      <h1 class="text-foreground mb-4 text-5xl font-bold md:text-5xl">
+        Le suivi des abscences non remplacées.
       </h1>
       <p class="text-muted-foreground text-lg">
         Les parents et les élèves peuvent enregistrer les absences des enseignants et contribuer à
