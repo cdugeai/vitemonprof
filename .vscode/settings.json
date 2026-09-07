@@ -1,5 +1,32 @@
 {
   "files.associations": {
     "*.css": "tailwindcss"
-  }
+  },
+  // No credentials here on purpose. Each `ATTACH` names a DuckDB secret instead
+  // of carrying a connection string, so this file is safe to commit and every
+  // developer supplies their own password once, locally.
+  //
+  // One-time setup per machine (run in the DuckDB query editor or the CLI):
+  //
+  //   CREATE PERSISTENT SECRET vmp_dev (
+  //       TYPE postgres, HOST '<neon-host>', PORT 5432,
+  //       DATABASE 'dev', USER '<user>', PASSWORD '<password>');
+  //
+  // The secret is stored in ~/.duckdb/stored_secrets/, outside the repo.
+  // `SELECT * FROM duckdb_secrets()` lists them; passwords are redacted there.
+  "duckdb.databases": [
+    {
+      "alias": "vmp_dev",
+      "type": "manual",
+      "sql": "ATTACH '' AS vmp_dev (TYPE postgres, SECRET vmp_dev);",
+      "attached": true
+    },
+    {
+      "alias": "vmp_docker",
+      "type": "manual",
+      "sql": "ATTACH '' AS vmp_docker (TYPE postgres, SECRET vmp_docker);",
+      "attached": false
+    }
+  ],
+  "duckdb.defaultDatabase": "vmp_dev"
 }
