@@ -7,6 +7,10 @@
   import { resolve } from '$app/paths';
   import favicon from '$lib/assets/favicon.svg';
   import Navbar from '$lib/components/Navbar.svelte';
+  // Mounted once here rather than per-page: the toaster is the single portal every
+  // `toast()` call renders into, and living in the layout means a toast raised just
+  // before a navigation isn't torn down with the page that raised it.
+  import { Toaster } from '$lib/components/ui/sonner';
   // Importing the file (rather than hardcoding a path) hands Vite the asset so the URL
   // carries the same content hash as the one in the stylesheet — a hardcoded path would
   // preload a *different* URL and cost an extra download instead of saving one.
@@ -24,6 +28,8 @@
        mode, and a preload whose mode doesn't match is discarded and fetched again. -->
   <link rel="preload" href={interLatin} as="font" type="font/woff2" crossorigin="anonymous" />
 </svelte:head>
+
+<Toaster />
 
 <div class="flex min-h-screen flex-col">
   <Navbar />

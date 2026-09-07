@@ -38,6 +38,13 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['svelte-maplibre-gl'],
+    // Pre-bundled at server start instead of being discovered on the first page that
+    // imports it. `<Toaster />` lives in the root layout, so in dev Vite meets
+    // `svelte-sonner` mid-request, optimises it, and forces a full page reload to pick up
+    // the new bundle — which lands as "Execution context was destroyed" in whichever
+    // Playwright test happens to be running against a cold server. Listing it here costs
+    // nothing at build time and makes the first run deterministic.
+    include: ['svelte-sonner'],
   },
   test: {
     expect: { requireAssertions: true },
