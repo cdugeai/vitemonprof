@@ -31,3 +31,20 @@ export function canSubmitForm({
 }: FormHintProps): boolean {
   return firstMissingRequirement({ selectedSchool, selectedClass, selectedDate }) === null;
 }
+
+/**
+ * Today's date as `YYYY-MM-DD` — the only format `<input type="date">` accepts
+ * for its value, regardless of how the browser displays it to the user.
+ *
+ * Deliberately *not* `new Date().toISOString().slice(0, 10)`, the usual
+ * one-liner for this: `toISOString()` converts to UTC first, so anywhere east
+ * of Greenwich (Paris is UTC+1/+2) every moment between local midnight and the
+ * offset reports *yesterday*. Reading the local getters keeps us in the user's
+ * own day.
+ *
+ * `date` is injectable so the behaviour is testable without faking the clock.
+ */
+export function todayLocalISO(date: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
