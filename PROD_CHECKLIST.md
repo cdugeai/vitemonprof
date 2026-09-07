@@ -172,8 +172,8 @@ use CASCADE, SET NULL or SET DEFAULT`), so the migration probes
       non-empty string. Reuse `getSchoolsInfo([id])` from `src/lib/server/data.ts`
       — an unknown id must `fail(400)`. This is the same lookup that yields the
       department for §4, so it pays for itself.
-- [ ] **Bound the date.** `isCalendarDate()` accepts `1900-01-01` and `2099-12-31`
-      equally. Reject future dates and anything older than ~1 school year.
+- [x] **Bound the date.** `isCalendarDate()` now rejects future dates and anything
+      older than ~1 school year (365 days).
 - [ ] **Rate-limit the POST.** It is anonymous, unauthenticated, and writes a row
       per request. Pick one and note the choice in the file: a per-IP counter in
       Postgres, an Upstash/Vercel KV limiter, or a hidden honeypot field plus a
