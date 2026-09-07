@@ -130,6 +130,24 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
     expect(ids[0]).toBeGreaterThan(ids[1]);
   });
 
+  it('answers `add` with the id the stored row actually has', async () => {
+    const repo = await create();
+
+    const first = await repo.add(report({ class: '6e', createdAt: daysAgo(2) }));
+    const second = await repo.add(report({ class: '5e', createdAt: daysAgo(1) }));
+
+    // The two halves of the promise, and both matter to the caller that reads
+    // it — the submission action logs this id so an accepted report can be found
+    // in the table. An id that is merely *an* id is no use: it has to be the id
+    // of the row this call wrote, not of the previous one or of a concurrent
+    // insert, which is what reading it out of `returning` rather than out of a
+    // second query buys.
+    const byId = new Map((await repo.list()).map((r) => [r.id, r.class]));
+
+    expect(byId.get(first)).toBe('6e');
+    expect(byId.get(second)).toBe('5e');
+  });
+
   it('keeps the optional fields as null rather than inventing a value', async () => {
     const repo = await create();
 

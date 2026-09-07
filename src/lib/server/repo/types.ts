@@ -22,16 +22,20 @@ import type {
  */
 export interface MissedHourRepo {
   /**
-   * Persist one report.
+   * Persist one report, and answer with the id the store assigned it.
    *
-   * The argument is a `NewMissedHour`: the id is the store's to assign, and it
-   * does not come back out of this call. That is a deliberate narrowing of the
-   * old contract, where the caller minted a UUID and therefore knew the id
-   * without a round trip — a sequence lives in the database, so that is no longer
-   * true for anybody. Nothing needs it today; the day something does, this
-   * returns the stored row rather than having callers guess.
+   * The argument is a `NewMissedHour`: the id is the store's to give, never the
+   * caller's to mint. What comes back is that id, and it can only come back —
+   * a sequence lives in the database, so a caller has no way to know it
+   * otherwise, and asking a second time (`max(id)`, `currval()`) would answer
+   * about someone else's report under concurrent submissions.
+   *
+   * The one caller that wants it is the log line in the submission action:
+   * naming the row makes an accepted report traceable from an access log to a
+   * table. Backends therefore have to read it out of the write, which is why
+   * `insertMissedHour` carries a `returning` clause.
    */
-  add(mh: NewMissedHour): Promise<void>;
+  add(mh: NewMissedHour): Promise<number>;
 
   /**
    * All reports, **newest first** (`createdAt` descending).

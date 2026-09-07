@@ -31,8 +31,12 @@ export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
   return {
     async add(mh) {
       await jitter();
-      rows.push({ ...mh, id: nextId });
+
+      const id = nextId;
+      rows.push({ ...mh, id });
       nextId += 1;
+
+      return id;
     },
 
     async list(limit?: number) {

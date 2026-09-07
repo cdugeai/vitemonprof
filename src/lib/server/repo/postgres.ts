@@ -3,7 +3,9 @@ import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import type { MissedHour, MissedHourStats, TopMissedHours } from '$lib/types/missedHours';
 import type { MissedHourRepo } from './types';
+import { insertedId } from './insertedId';
 import {
+  INSERT_ALIAS,
   LIST_ALIAS,
   TOP_ALIAS,
   insertMissedHour,
@@ -38,7 +40,9 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
 
   return {
     async add(mh) {
-      await run(insertMissedHour(mh));
+      const [row] = await run(insertMissedHour(mh));
+
+      return insertedId(row?.[INSERT_ALIAS.id]);
     },
 
     async list(limit?: number) {

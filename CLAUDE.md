@@ -132,6 +132,26 @@ alone: Post/Redirect/Get needs a redirect the browser actually follows, so
 "accepted" has two codes and they say which kind of client reported.
 `e2e/submission-status.spec.ts` pins all six.
 
+An accepted one also writes a line, because a status code on its own says that
+_something_ was filed and nothing about what:
+
+```
+[submission] report 42 accepted school=0250571K departement=25 date=2026-09-03 hours=1
+```
+
+The id is the row's, and it can only come from the write itself —
+`missed_hour.id` is a sequence, so `MissedHourRepo.add()` returns what it
+assigned (`insert … returning "id"`, a clause DuckDB and Postgres spell
+identically). Asking afterwards with `max(id)` or `currval()` would answer about
+someone else's report the moment two people submit at once.
+
+`departement` is in the line for the same reason it is resolved server-side from
+the registry rather than taken from the form: a school id that resolves to
+nothing is the one silent way a submission ends up worth less than it looks —
+every département-scoped query excludes it — and `departement=unknown` is where
+that becomes visible. No IP and no free-text: an access log is not the place to
+widen what an anonymous report says about who filed it.
+
 ## Reads are cached for five minutes
 
 Every read the pages make — the five recent reports, the stats panel, each

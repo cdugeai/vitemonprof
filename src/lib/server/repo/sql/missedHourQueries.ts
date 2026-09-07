@@ -64,13 +64,22 @@ function createdAtMillis(eb: ExpressionBuilder<Database, 'missed_hour'>, dialect
     : sql<bigint>`(extract(epoch from ${column}) * 1000)::bigint`;
 }
 
+/** The column `insertMissedHour` returns, shared so both row readers agree. */
+export const INSERT_ALIAS = { id: 'id' } as const;
+
 /**
- * Insert one report.
+ * Insert one report, and hand back the id the store assigned it.
  *
  * No `id` in the values: the column defaults to `nextval('missed_hour_id_seq')`,
  * and `types.generated.ts` types it as `Generated<number>` — so leaving it out is
  * checked, not merely conventional. Supplying one here would work and then
  * silently desynchronise the sequence from the table.
+ *
+ * Which is exactly why the id has to come back out of the statement rather than
+ * be read afterwards: a `select max(id)` or a second `currval()` round trip
+ * would be a different transaction's answer under concurrent submissions.
+ * `returning` is one statement, and both engines support it — a rare clause
+ * DuckDB and Postgres spell identically, so it stays in the shared layer.
  */
 export function insertMissedHour(mh: NewMissedHour): SqlQuery {
   return db
@@ -85,6 +94,7 @@ export function insertMissedHour(mh: NewMissedHour): SqlQuery {
       created_at: mh.createdAt,
       departement: mh.departement,
     })
+    .returning(INSERT_ALIAS.id)
     .compile();
 }
 
