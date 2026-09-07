@@ -25,6 +25,9 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    exclude: ['svelte-maplibre-gl'],
+  },
   test: {
     expect: { requireAssertions: true },
     projects: [
