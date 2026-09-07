@@ -41,6 +41,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24",
+    "@types/pako": "^2.0.4",
     "auth": "^1.6.23",
     "better-auth": "^1.6.23",
     "bits-ui": "^2.18.1",
@@ -72,6 +73,7 @@
   "dependencies": {
     "@duckdb/node-api": "^1.5.5-r.4",
     "kysely": "^0.29.5",
-    "kysely-postgres-js": "^3.0.0"
+    "kysely-postgres-js": "^3.0.0",
+    "pako": "^3.0.1"
   }
 }

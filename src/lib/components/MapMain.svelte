@@ -3,6 +3,7 @@
   import { MapLibre, NavigationControl, ScaleControl, GlobeControl } from 'svelte-maplibre-gl';
   import { onMount } from 'svelte';
   import type { School } from '$lib/types/school';
+  import { fetchGzipJson } from '$lib/gzip-json';
   import MapLayerSchool from './map/MapLayerSchool.svelte';
   import { MAP_DEFAULT_LAT, MAP_DEFAULT_LNG, MAP_DEFAULT_ZOOM } from '$lib/constants';
 
@@ -16,8 +17,7 @@
 
   onMount(async () => {
     try {
-      const response = await fetch('/api/schools');
-      schools = await response.json();
+      schools = await fetchGzipJson<School[]>('/api/schools');
     } catch (error) {
       console.error('Failed to load schools:', error);
     }
