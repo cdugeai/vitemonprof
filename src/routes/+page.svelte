@@ -7,6 +7,7 @@
   import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
 
   let selectedClass: string = $state('none');
+  let selectedSchoolId: string | null = $state(null);
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -31,7 +32,7 @@
         </Card.Header>
         <Card.Content class="p-0">
           <div class="h-96 rounded-lg bg-gray-100">
-            <MapMain />
+            <MapMain bind:selectedSchoolId />
           </div>
         </Card.Content>
       </Card.Root>
@@ -47,7 +48,12 @@
           <form class="space-y-4">
             <div class="space-y-2">
               <Label for="school">School</Label>
-              <Input id="school" type="text" placeholder="Select school..." />
+              <Input
+                id="school"
+                type="text"
+                placeholder="Select school..."
+                value={selectedSchoolId}
+              />
             </div>
 
             <div class="space-y-2">
