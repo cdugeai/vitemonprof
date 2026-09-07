@@ -54,7 +54,11 @@ export default defineConfig({
         test: {
           name: 'server',
           environment: 'node',
-          include: ['src/**/*.{test,spec}.{js,ts}'],
+          // `scripts/` as well as `src/`: the nightly data.gouv.fr publisher lives
+          // there and is worth pinning, having already shipped one bug that no
+          // type and no linter could see — a payload the API accepts and that
+          // says the wrong thing.
+          include: ['{src,scripts}/**/*.{test,spec}.{js,ts}'],
           exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
         },
       },
