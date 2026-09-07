@@ -59,6 +59,7 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@duckdb/node-api": "^1.5.5-r.4"
+    "@duckdb/node-api": "^1.5.5-r.4",
+    "knex": "^3.3.0"
   }
 }

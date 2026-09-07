@@ -1,113 +1,80 @@
-import type { DuckDBConnection } from '@duckdb/node-api';
+import type { DuckDBConnection, DuckDBValue } from '@duckdb/node-api';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
-import { STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
+import type { MissedHourRepo } from './types';
+import {
+  LIST_ALIAS,
+  insertMissedHour,
+  listMissedHours,
+  statsMissedHours,
+  type SqlQuery,
+} from './sql/missedHourQueries';
 
 /**
  * DuckDB implementation — the same code whether `DUCKDB_PATH` points at a local
  * file or at MotherDuck.
  *
- * Written as raw SQL because Drizzle has no DuckDB dialect. That sounds like a
- * downgrade and mostly isn't: DuckDB deliberately tracks Postgres syntax, so the
- * aggregate below is character-for-character the query in `postgres.ts` —
- * `filter (where …)`, `interval`, `coalesce`, `::int` casts and all. What Drizzle
- * was buying here was identifier quoting and typed rows, and both are cheap to do
- * by hand for three statements.
+ * Shares every statement with the Postgres backend via `./sql/missedHourQueries`.
+ * That works because Knex's `pg` dialect emits double-quoted identifiers and `$1`
+ * placeholders, both of which DuckDB accepts unchanged — so "no DuckDB dialect in
+ * Knex" turns out not to matter.
+ *
+ * What stays local is the row marshalling, and here it earns its place: DuckDB
+ * hands back `DuckDBUUIDValue` / `DuckDBTimestampTZValue` wrappers rather than JS
+ * natives, and the repo contract is that no engine type reaches the domain.
  *
  * Worth knowing before choosing this backend: DuckDB is a columnar OLAP engine.
- * `stats()` is what it is built for and will stay fast well past the point where
- * the row-store version wouldn't. `add()` is the opposite — one row per user
- * action is the access pattern DuckDB is *least* suited to, and in file mode only
- * a single process may hold the write lock, so this does not survive being run at
- * more than one instance. Fine for local development and a single-node deploy;
- * MotherDuck is the answer for anything beyond that.
+ * `stats()` is what it is built for. `add()` — one row per user action — is the
+ * pattern it suits least, and in file mode only one process may hold the write
+ * lock, so this does not survive running at more than one instance. Fine for
+ * local development and a single node; MotherDuck is the answer beyond that.
  */
 export function createDuckDbMissedHourRepo(connection: DuckDBConnection): MissedHourRepo {
+  // DuckDB's driver wants a mutable array, while `SqlQuery` keeps its bindings
+  // readonly so no caller can mutate a query after it is built.
+  const bind = (q: SqlQuery) => [...q.bindings] as DuckDBValue[];
+
   return {
     async add(mh) {
-      await connection.run(
-        `insert into missed_hour
-           ("uuid", "school_id", "class", "class_group", "discipline",
-            "date", "nb_hours", "created_at")
-         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          mh.uuid,
-          mh.schoolId,
-          mh.class,
-          mh.classGroup,
-          mh.discipline,
-          mh.date_,
-          mh.nbHours,
-          mh.createdAt,
-        ]
-      );
+      const q = insertMissedHour(mh);
+      await connection.run(q.sql, bind(q));
     },
 
     async list() {
-      /**
-       * The casts in the select list are the boundary doing its job, not
-       * decoration. Left alone, the driver hands back its own wrapper objects —
-       * `DuckDBUUIDValue`, `DuckDBDateValue`, `DuckDBTimestampTZValue` — and the
-       * repo's whole contract is that no engine type escapes into the domain.
-       *
-       * `created_at` is the one that would actually bite. Its text form is
-       * `2026-08-18 11:00:00+02`: a space instead of `T`, a two-digit offset
-       * instead of `+02:00`, and — worse — rendered in the *server's* local zone,
-       * so the same row reads differently depending on where it is deployed. V8
-       * happens to parse that; the ECMAScript spec does not require any engine to.
-       * `epoch_ms` sidesteps the whole question by returning absolute milliseconds
-       * as a bigint, which converts to a real ISO string with no parsing at all.
-       */
-      const reader = await connection.runAndReadAll(
-        `select
-           "uuid"::text        as uuid,
-           "school_id"         as school_id,
-           "class"             as class,
-           "class_group"       as class_group,
-           "discipline"        as discipline,
-           "date"::text        as date,
-           "nb_hours"          as nb_hours,
-           epoch_ms("created_at") as created_at_ms
-         from missed_hour
-         order by "created_at" desc`
-      );
+      const q = listMissedHours('duckdb');
+      const reader = await connection.runAndReadAll(q.sql, bind(q));
 
-      return reader.getRowObjects().map(
-        (r) =>
-          ({
-            uuid: String(r.uuid),
-            schoolId: String(r.school_id),
-            class: String(r.class),
-            classGroup: isClassGroup(r.class_group) ? r.class_group : null,
-            discipline: isDiscipline(r.discipline) ? r.discipline : null,
-            date_: String(r.date),
-            nbHours: Number(r.nb_hours),
-            createdAt: new Date(Number(r.created_at_ms)).toISOString(),
-          }) satisfies MissedHour
-      );
+      return reader.getRowObjects().map((r) => {
+        // Read into locals before guarding: a type predicate narrows a *name*,
+        // and TypeScript will not carry that narrowing back through an indexed
+        // access like `r[LIST_ALIAS.classGroup]`.
+        const classGroup = r[LIST_ALIAS.classGroup];
+        const discipline = r[LIST_ALIAS.discipline];
+
+        return {
+          uuid: String(r[LIST_ALIAS.uuid]),
+          schoolId: String(r[LIST_ALIAS.schoolId]),
+          class: String(r[LIST_ALIAS.class]),
+          classGroup: isClassGroup(classGroup) ? classGroup : null,
+          discipline: isDiscipline(discipline) ? discipline : null,
+          date_: String(r[LIST_ALIAS.date]),
+          nbHours: Number(r[LIST_ALIAS.nbHours]),
+          // `created_at_ms` arrives as a bigint, which `Number` narrows safely:
+          // epoch millis stay exact well past the year 275760.
+          createdAt: new Date(Number(r[LIST_ALIAS.createdAtMs])).toISOString(),
+        } satisfies MissedHour;
+      });
     },
 
     async stats() {
-      // Identical to the Postgres version, which is the interesting part: the
-      // portability here is DuckDB's, not an abstraction of ours.
-      const reader = await connection.runAndReadAll(
-        `select
-           coalesce(sum("nb_hours"), 0)::int as total_hours,
-           coalesce(
-             sum("nb_hours") filter (where "created_at" >= now() - ($1::int * interval '1 day')),
-             0
-           )::int as total_hours_last_7d,
-           count(distinct "school_id")::int as schools_affected,
-           count(distinct "class")::int as classes_affected
-         from missed_hour`,
-        [STATS_WINDOW_DAYS]
-      );
-
+      const q = statsMissedHours();
+      const reader = await connection.runAndReadAll(q.sql, bind(q));
       const [row] = reader.getRowObjects();
 
-      // Unreachable for the same reason as in `postgres.ts` — an aggregate with no
-      // `group by` always yields exactly one row — but typed rather than asserted.
+      // Unreachable for the same reason as in `postgres.ts` — an aggregate with
+      // no `group by` always yields exactly one row — but typed rather than
+      // asserted.
       return {
         total_hours: Number(row?.total_hours ?? 0),
         total_hours_last_7d: Number(row?.total_hours_last_7d ?? 0),

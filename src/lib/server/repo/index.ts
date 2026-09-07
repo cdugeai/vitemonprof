@@ -42,7 +42,11 @@ async function createRepo(): Promise<MissedHourRepo> {
       // `DATABASE_URL` is unset, and a static import would run that check even in
       // memory mode — which is exactly the mode you want when you have no database.
       // Deferring the import keeps the two backends genuinely independent.
-      return createPostgresMissedHourRepo((await import('$lib/server/db')).db);
+      //
+      // The raw postgres-js client, not the Drizzle instance: the SQL is built by
+      // `repo/sql/` now, so this backend only needs something that can execute a
+      // statement with bindings.
+      return createPostgresMissedHourRepo((await import('$lib/server/db')).client);
 
     case 'duckdb': {
       // Same deferral, same reason: only this backend should require `DUCKDB_PATH`,
