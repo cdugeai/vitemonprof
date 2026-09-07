@@ -112,8 +112,8 @@ export const LIST_ALIAS = {
  * `integer`, so the column is selected as-is. One fewer cast is a small bonus of
  * the narrower key.
  */
-export function listMissedHours(dialect: SqlDialect): SqlQuery {
-  return db
+export function listMissedHours(dialect: SqlDialect, limit?: number): SqlQuery {
+  let query = db
     .selectFrom('missed_hour')
     .select((eb) => [
       'id',
@@ -125,8 +125,13 @@ export function listMissedHours(dialect: SqlDialect): SqlQuery {
       'nb_hours',
       createdAtMillis(eb, dialect).as(LIST_ALIAS.createdAtMs),
     ])
-    .orderBy('created_at', 'desc')
-    .compile();
+    .orderBy('created_at', 'desc');
+
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+
+  return query.compile();
 }
 
 /**

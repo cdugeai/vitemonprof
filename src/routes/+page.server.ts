@@ -25,7 +25,7 @@ export const load: PageServerLoad = () => {
   // Returned as un-awaited promises so SvelteKit streams them: the page shell renders
   // immediately and the `{#await}` blocks fill in when each query lands.
   return {
-    missed_hours: missedHourRepo.list(),
+    missed_hours: missedHourRepo.list(5),
     missed_hours_stats: missedHourRepo.stats(),
   };
 };

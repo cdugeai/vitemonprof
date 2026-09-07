@@ -39,8 +39,8 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
       await run(insertMissedHour(mh));
     },
 
-    async list() {
-      const rows = await run(listMissedHours('postgres'));
+    async list(limit?: number) {
+      const rows = await run(listMissedHours('postgres', limit));
 
       return rows.map((r) => {
         // Same reason as in `duckdb.ts`: a type predicate narrows a name, not an
