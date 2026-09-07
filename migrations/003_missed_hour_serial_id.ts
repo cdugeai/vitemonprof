@@ -83,13 +83,24 @@ interface KeyColumn {
 /**
  * The staging table, identical in both directions apart from its key.
  *
- * The primary key is declared as a *named* table-level constraint rather than
- * inline on the column. Postgres derives an inline key's name from the table it
- * was created on and does not revisit it during `rename`, so the staging name
- * would survive the swap and leave a `missed_hour` table wearing a
- * `missed_hour_new_pkey`. Naming it here makes the constraint say what it is
- * whatever the table was called on the way in — and DuckDB parses the same
- * syntax, so it costs nothing in portability.
+ * The primary key is a *named* table-level constraint rather than an inline
+ * `primaryKey()`, because Postgres derives an inline key's name from the table it
+ * was created on and never revisits it during `rename` — the staging name would
+ * survive the swap and leave `missed_hour` wearing a `missed_hour_new_pkey`.
+ *
+ * The name is `missed_hour_<key>_pkey`, and the key column in it is load-bearing.
+ * A constraint's backing index is a relation in the schema namespace, so its name
+ * has to be unique across the whole schema — and the staging table is created
+ * while the original is still standing. Asking for the obvious
+ * `missed_hour_pkey` therefore collides with the incumbent's own primary key and
+ * fails with `42P07 relation "missed_hour_pkey" already exists`. Keying the name
+ * to the column means `up` and `down` each ask for a name the other direction
+ * cannot be holding.
+ *
+ * (DuckDB does not enforce constraint-name uniqueness and accepts either
+ * spelling, so this is one of the few places where the shared migration has to be
+ * written for the *stricter* engine — and where a green DuckDB test is not
+ * evidence that Postgres will accept it.)
  */
 function createTable(db: Kysely<unknown>, table: string, key: KeyColumn) {
   return db.schema
@@ -104,7 +115,7 @@ function createTable(db: Kysely<unknown>, table: string, key: KeyColumn) {
     .addColumn('created_at', sql`timestamp with time zone`, (c) =>
       c.notNull().defaultTo(sql`now()`)
     )
-    .addPrimaryKeyConstraint('missed_hour_pkey', [key.name])
+    .addPrimaryKeyConstraint(`missed_hour_${key.name}_pkey`, [key.name])
     .execute();
 }
 
