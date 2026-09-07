@@ -1,4 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
+import { resetRateLimit } from './support/rate-limit';
+
+// These tests submit the form for real, so they need quota. `rate-limit.spec.ts`
+// runs first and empties it on purpose.
+test.beforeEach(async ({ request }) => {
+  await resetRateLimit(request);
+});
 
 /**
  * Opens one of the searchable `<Select>`s, types a query, and picks a result.
