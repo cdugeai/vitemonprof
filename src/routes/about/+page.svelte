@@ -73,7 +73,7 @@
       </section>
 
       <section>
-        <h2 class="mb-4 text-2xl font-bold">À qui cela sert</h2>
+        <h2 class="mb-4 text-2xl font-bold">À qui cela sert ?</h2>
         <ul class="list-inside list-disc space-y-2 text-gray-700">
           <li>
             <strong>Aux familles et aux élèves</strong>, pour situer ce qu'ils vivent dans un
@@ -91,7 +91,7 @@
       </section>
 
       <section>
-        <h2 class="mb-4 text-2xl font-bold">Comment contribuer</h2>
+        <h2 class="mb-4 text-2xl font-bold">Comment contribuer?</h2>
         <ol class="list-inside list-decimal space-y-2 text-gray-700">
           <li>Choisissez l'établissement, dans la liste ou sur la carte.</li>
           <li>Indiquez la classe, la date et le nombre d'heures concernées.</li>
@@ -102,6 +102,16 @@
           Plusieurs personnes peuvent soumettre la même heure : c'est utile. Les soumissions
           concordantes sont regroupées et comptées <strong>une seule fois</strong> dans les totaux, et
           leur nombre indique la fiabilité de l'information.
+        </p>
+
+        <p class="text-gray-700">
+          <br />
+          De plus, <b>le code est ouvert</b> et disponible sur
+          <a
+            href="https://github.com/cdugeai/vitemonprof"
+            target="_blank"
+            class="text-blue-600 underline">github.com/cdugeai/vitemonprof</a
+          >. Vous pouvez y proposer directement des modifications.
         </p>
       </section>
 
