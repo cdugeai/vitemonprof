@@ -24,6 +24,7 @@
   import FormHint from './FormHint.svelte';
   import { dateToStr } from '$lib/utils';
   import NumberHoursInput from './NumberHoursInput.svelte';
+  import { preloadSchools } from '$lib/schools-cache';
 
   interface Props {
     selectedClass?: ClassLevel;
@@ -65,8 +66,29 @@
    */
   let mapModule = $state.raw<Promise<typeof import('../MapMain.svelte')> | undefined>();
 
+  /**
+   * Start fetching the two slow things the map needs, before anyone asks for it.
+   *
+   * Both are idempotent — `??=` here, a memoised promise in `schools-cache` — so
+   * this is safe to call from as many events as make sense.
+   *
+   * Reaching for the tab is a strong enough signal of intent to spend the
+   * bandwidth, and it is the only signal available that costs nothing: the
+   * ~1 MB MapLibre chunk and the ~2.5 MB registry are both pure waste for the
+   * many visitors who only ever use the « Liste » tab, so they must not be
+   * fetched on page load.
+   *
+   * Hover buys the most (a few hundred milliseconds between reaching and
+   * clicking), focus covers keyboard users, and on a touchscreen `pointerenter`
+   * fires just before the tap — barely any lead time, but nothing lost either.
+   */
+  function preloadMap() {
+    mapModule ??= import('../MapMain.svelte');
+    preloadSchools();
+  }
+
   function onTabChange(value: string) {
-    if (value === 'o_map') mapModule ??= import('../MapMain.svelte');
+    if (value === 'o_map') preloadMap();
   }
 </script>
 
@@ -93,7 +115,7 @@
             <List />
             Liste
           </Tabs.Trigger>
-          <Tabs.Trigger value="o_map">
+          <Tabs.Trigger value="o_map" onpointerenter={preloadMap} onfocus={preloadMap}>
             <MapPin />
             Carte
           </Tabs.Trigger>
