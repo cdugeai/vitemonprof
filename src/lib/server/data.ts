@@ -45,6 +45,23 @@ export function getSchools(): School[] {
 }
 
 /**
+ * Look up a set of schools by UAI code.
+ *
+ * Lives here rather than behind `MissedHourRepo` because schools aren't in the
+ * database at all — they're parsed from the CSV above. Giving CSV data a
+ * repository interface would be abstraction with nothing to abstract over; if the
+ * registry ever moves into Postgres, *that's* when it earns its own port.
+ *
+ * Returns a Map so callers can index by id without re-scanning. Unknown ids are
+ * simply absent — a bad id in a query string isn't an error worth failing on.
+ */
+export function getSchoolsInfo(school_ids: string[]): Map<string, School> {
+  const wanted = new Set(school_ids);
+
+  return new Map(getSchools().filter((s) => wanted.has(s.id)).map((s) => [s.id, s]));
+}
+
+/**
  * Lowercase and strip diacritics so "Vitré" and "VITRE" are the same needle.
  * NFD splits "é" into "e" + combining accent; the regex then drops the accent.
  */
