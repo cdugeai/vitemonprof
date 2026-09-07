@@ -29,3 +29,6 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results/
 playwright-report/
+
+# CSV dumps from scripts/export-missed-hour-events.ts — real report data
+/exports/

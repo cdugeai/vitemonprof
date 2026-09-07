@@ -26,6 +26,8 @@
     "db:types": "node --env-file=.env scripts/gen-types.ts",
     "db:backfill:departement": "node --env-file=.env scripts/backfill-departement.ts",
     "db:diff": "node --env-file=.env scripts/db-diff.ts",
+    "db:export:hours": "node --env-file=.env scripts/export-missed-hour.ts",
+    "db:export:events": "node --env-file=.env scripts/export-missed-hour-events.ts",
     "db:migrate:duckdb": "node --env-file-if-exists=.env scripts/migrate.ts --duckdb"
   },
   "engines": {
@@ -43,10 +45,12 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24",
     "@types/pako": "^2.0.4",
+    "@types/pg": "^8.23.1",
     "auth": "^1.6.23",
     "better-auth": "^1.6.23",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
+    "csv-writer": "^1.6.0",
     "drizzle-orm": "^0.45.2",
     "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
