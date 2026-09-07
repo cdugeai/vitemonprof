@@ -52,10 +52,10 @@
   );
 </script>
 
-<div class="mx-auto max-w-7xl px-4 py-8">
+<div class="mx-auto max-w-7xl px-4 py-8 md:px-8">
   <!-- Hero Section -->
   <section class="mb-6">
-    <div class="bg-mybeige-bg rounded-lg p-4 md:p-8">
+    <div class="bg-mybeige-bg rounded-lg">
       <p class="text-primary mb-2 text-sm font-semibold tracking-wide uppercase">
         Moniteur national des absences en classe
       </p>
