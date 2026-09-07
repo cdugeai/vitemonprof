@@ -4,6 +4,7 @@ import { missedHourRepo } from '$lib/server/repo';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import { isClassLevel } from '$lib/classLevels';
+import { checkRateLimit } from '$lib/server/rateLimit';
 
 /**
  * `YYYY-MM-DD` and a genuine calendar date — `2026-02-31` matches the shape but
@@ -51,9 +52,15 @@ export const load: PageServerLoad = () => {
   };
 };
 export const actions = {
-  default: async ({ request }) => {
+  default: async ({ request, getClientAddress }) => {
     if (request.method !== 'POST') {
       return fail(405, { error: 'Method not allowed' });
+    }
+
+    // Rate limit: max 5 requests per minute per IP
+    const clientIp = getClientAddress();
+    if (!checkRateLimit(clientIp)) {
+      return fail(429, { error: 'Too many requests. Maximum 5 submissions per minute.' });
     }
 
     const formData = await request.formData();

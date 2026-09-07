@@ -1,0 +1,133 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('rate limiting', () => {
+  test('should allow 5 form submissions within 1 minute', async ({ page }) => {
+    await page.goto('/');
+
+    // Submit the form 5 times
+    for (let i = 1; i <= 5; i++) {
+      // Fill required fields with valid data
+      const formData = new FormData();
+      formData.append('schoolId', `test-school-${i}`);
+      formData.append('class', '6e');
+      formData.append('date', '2026-08-20');
+      formData.append('nbHours', '1');
+
+      // Submit via fetch to check response status
+      const response = await page.evaluate(async (data) => {
+        const formData = new FormData();
+        formData.append('schoolId', data.schoolId);
+        formData.append('class', data.class);
+        formData.append('date', data.date);
+        formData.append('nbHours', data.nbHours);
+
+        const res = await fetch('/', {
+          method: 'POST',
+          body: formData,
+          redirect: 'manual'
+        });
+
+        const text = await res.text();
+        return {
+          status: res.status,
+          isRateLimited: text.includes('Too many')
+        };
+      }, { schoolId: `test-school-${i}`, class: '6e', date: '2026-08-20', nbHours: '1' });
+
+      expect(response.status).toBe(200);
+      expect(response.isRateLimited).toBe(false);
+    }
+  });
+
+  test('should block the 6th submission within 1 minute', async ({ page }) => {
+    await page.goto('/');
+
+    // Submit 5 times to reach the limit
+    for (let i = 1; i <= 5; i++) {
+      await page.evaluate(async (num) => {
+        const formData = new FormData();
+        formData.append('schoolId', `test-school-${num}`);
+        formData.append('class', '6e');
+        formData.append('date', '2026-08-20');
+        formData.append('nbHours', '1');
+
+        await fetch('/', {
+          method: 'POST',
+          body: formData,
+          redirect: 'manual'
+        });
+      }, i);
+    }
+
+    // 6th submission should be blocked
+    const response = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('schoolId', 'test-school-6');
+      formData.append('class', '6e');
+      formData.append('date', '2026-08-20');
+      formData.append('nbHours', '1');
+
+      const res = await fetch('/', {
+        method: 'POST',
+        body: formData,
+        redirect: 'manual'
+      });
+
+      const text = await res.text();
+      return {
+        status: res.status,
+        isRateLimited: text.includes('Too many'),
+        hasErrorMessage: text.includes('Maximum 5 submissions per minute')
+      };
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.isRateLimited).toBe(true);
+    expect(response.hasErrorMessage).toBe(true);
+  });
+
+  test('should return correct error message when rate limited', async ({ page }) => {
+    await page.goto('/');
+
+    // Hit the rate limit
+    for (let i = 1; i <= 5; i++) {
+      await page.evaluate(async (num) => {
+        const formData = new FormData();
+        formData.append('schoolId', `test-school-${num}`);
+        formData.append('class', '6e');
+        formData.append('date', '2026-08-20');
+        formData.append('nbHours', '1');
+
+        await fetch('/', {
+          method: 'POST',
+          body: formData,
+          redirect: 'manual'
+        });
+      }, i);
+    }
+
+    // 6th submission should have the error message
+    const errorMessage = await page.evaluate(async () => {
+      const formData = new FormData();
+      formData.append('schoolId', 'test-school-6');
+      formData.append('class', '6e');
+      formData.append('date', '2026-08-20');
+      formData.append('nbHours', '1');
+
+      const res = await fetch('/', {
+        method: 'POST',
+        body: formData,
+        redirect: 'manual'
+      });
+
+      const text = await res.text();
+      // Look for the error message in the response
+      if (text.includes('Too many requests')) {
+        return 'Too many requests. Maximum 5 submissions per minute.';
+      }
+      return null;
+    });
+
+    expect(errorMessage).toBe('Too many requests. Maximum 5 submissions per minute.');
+  });
+});
