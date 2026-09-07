@@ -352,22 +352,22 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
     it('returns nothing at all when there is nothing stored', async () => {
       const repo = await create();
 
-      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([]);
+      expect(await repo.top({ departement: null, dimension: 'departement', limit: 5 })).toEqual([]);
     });
 
-    it('ranks schools by total hours, descending', async () => {
+    it('ranks départements by total hours, descending', async () => {
       const repo = await create();
 
-      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
+      await repo.add(inDept('01', { schoolId: 'A', nbHours: 1 }));
       await repo.add(inDept('75', { schoolId: 'B', nbHours: 4 }));
-      await repo.add(inDept('75', { schoolId: 'C', nbHours: 2 }));
+      await repo.add(inDept('2A', { schoolId: 'C', nbHours: 2 }));
 
-      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+      const top = await repo.top({ departement: null, dimension: 'departement', limit: 5 });
 
       expect(top).toEqual([
-        { key: 'B', totalHours: 4, events: 1, submissions: 1 },
-        { key: 'C', totalHours: 2, events: 1, submissions: 1 },
-        { key: 'A', totalHours: 1, events: 1, submissions: 1 },
+        { key: '75', totalHours: 4, events: 1, submissions: 1 },
+        { key: '2A', totalHours: 2, events: 1, submissions: 1 },
+        { key: '01', totalHours: 1, events: 1, submissions: 1 },
       ]);
     });
 
@@ -375,10 +375,10 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       const repo = await create();
 
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 2, date_: '2026-08-17' }));
-      await repo.add(inDept('75', { schoolId: 'A', nbHours: 3, date_: '2026-08-18' }));
+      await repo.add(inDept('75', { schoolId: 'B', nbHours: 3, date_: '2026-08-18' }));
 
-      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
-        { key: 'A', totalHours: 5, events: 2, submissions: 2 },
+      expect(await repo.top({ departement: null, dimension: 'departement', limit: 5 })).toEqual([
+        { key: '75', totalHours: 5, events: 2, submissions: 2 },
       ]);
     });
 
@@ -386,43 +386,45 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       const repo = await create();
 
       // Three small reports against one large one. Ranking on `reportCount`
-      // would put A first; the site measures lost teaching time, so B wins.
+      // would put 75 first; the site measures lost teaching time, so 2A wins.
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-17' }));
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-18' }));
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-19' }));
-      await repo.add(inDept('75', { schoolId: 'B', nbHours: 4 }));
+      await repo.add(inDept('2A', { schoolId: 'B', nbHours: 4 }));
 
-      const [first] = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+      const [first] = await repo.top({ departement: null, dimension: 'departement', limit: 5 });
 
-      expect(first).toEqual({ key: 'B', totalHours: 4, events: 1, submissions: 1 });
+      expect(first).toEqual({ key: '2A', totalHours: 4, events: 1, submissions: 1 });
     });
 
     it('breaks ties on the key, so the order is stable across reloads', async () => {
       const repo = await create();
 
       await repo.add(inDept('75', { schoolId: 'B', nbHours: 2 }));
-      await repo.add(inDept('75', { schoolId: 'A', nbHours: 2 }));
+      await repo.add(inDept('2A', { schoolId: 'A', nbHours: 2 }));
 
       expect(
-        (await repo.top({ departement: '75', dimension: 'school', limit: 5 })).map((r) => r.key)
-      ).toEqual(['A', 'B']);
+        (await repo.top({ departement: null, dimension: 'departement', limit: 5 })).map(
+          (r) => r.key
+        )
+      ).toEqual(['2A', '75']);
     });
 
     it('honours the limit', async () => {
       const repo = await create();
 
-      for (const [schoolId, nbHours] of [
-        ['A', 1],
-        ['B', 2],
-        ['C', 3],
-        ['D', 4],
+      for (const [departement, nbHours] of [
+        ['01', 1],
+        ['2A', 2],
+        ['75', 3],
+        ['976', 4],
       ] as const) {
-        await repo.add(inDept('75', { schoolId, nbHours }));
+        await repo.add(inDept(departement, { schoolId: `S${departement}`, nbHours }));
       }
 
-      const top = await repo.top({ departement: '75', dimension: 'school', limit: 2 });
+      const top = await repo.top({ departement: null, dimension: 'departement', limit: 2 });
 
-      expect(top.map((r) => r.key)).toEqual(['D', 'C']);
+      expect(top.map((r) => r.key)).toEqual(['976', '75']);
     });
 
     it('counts only the département asked for', async () => {
@@ -431,24 +433,46 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
       await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9 }));
 
-      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
-        { key: 'A', totalHours: 1, events: 1, submissions: 1 },
+      // Selecting a zone narrows the ranking to it, which for this dimension
+      // leaves the one row describing that zone. That is the dashboard's
+      // « only show the stats of this département ».
+      expect(await repo.top({ departement: '75', dimension: 'departement', limit: 5 })).toEqual([
+        { key: '75', totalHours: 1, events: 1, submissions: 1 },
       ]);
     });
 
     it('counts every département when asked for none', async () => {
       const repo = await create();
 
-      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
-      await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9 }));
-      // Including rows with no département at all — a national total that
-      // silently dropped them would be wrong, and `departement is null` is
-      // exactly the mistake this catches.
-      await repo.add(report({ departement: null, schoolId: 'C', nbHours: 5 }));
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, discipline: 'maths' }));
+      await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9, discipline: 'maths' }));
+      // Including a row with no département at all: on this dimension the
+      // absence of a filter means the whole country, and `departement is null`
+      // — which would match only the rows predating `006` — is exactly the
+      // mistake this catches.
+      await repo.add(report({ departement: null, schoolId: 'C', nbHours: 5, discipline: 'maths' }));
 
-      expect(
-        (await repo.top({ departement: null, dimension: 'school', limit: 5 })).map((r) => r.key)
-      ).toEqual(['B', 'C', 'A']);
+      // Both départements *and* the unplaceable row land in the one group, so
+      // the total is the proof that nothing was filtered out.
+      expect(await repo.top({ departement: null, dimension: 'discipline', limit: 5 })).toEqual([
+        { key: 'maths', totalHours: 15, events: 3, submissions: 3 },
+      ]);
+    });
+
+    it('leaves reports with no département out of the national département ranking', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
+      // A school the registry does not have belongs to no zone, so it can be
+      // counted in none of them — not even the national ranking, where a
+      // "Non précisé" row would outrank real départements on a young dataset.
+      // The homepage's national total still includes it; the two numbers
+      // deliberately answer different questions.
+      await repo.add(report({ departement: null, schoolId: 'B', nbHours: 9 }));
+
+      expect(await repo.top({ departement: null, dimension: 'departement', limit: 5 })).toEqual([
+        { key: '75', totalHours: 1, events: 1, submissions: 1 },
+      ]);
     });
 
     it('excludes rows with no département from a département-scoped ranking', async () => {
@@ -456,7 +480,7 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
 
       await repo.add(report({ departement: null, schoolId: 'A', nbHours: 9 }));
 
-      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([]);
+      expect(await repo.top({ departement: '75', dimension: 'discipline', limit: 5 })).toEqual([]);
     });
 
     it('ranks disciplines when asked for that dimension', async () => {
@@ -547,23 +571,24 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       expect(stats.total_hours_last_7d).toBe(0);
     });
 
-    it('ranks on hours lost, so corroboration cannot inflate a school', async () => {
+    it('ranks on hours lost, so corroboration cannot inflate a département', async () => {
       const repo = await create();
 
-      // School A: one hour, reported by four people. School B: three genuinely
-      // different hours. B has lost more teaching and must rank first.
+      // 75: one hour, reported by four people. 2A: three genuinely different
+      // hours. 2A has lost more teaching and must rank first.
       for (const n of [4, 3, 2, 1]) {
-        await repo.add(report({ ...hour, schoolId: 'A', nbHours: 2, createdAt: daysAgo(n) }));
+        await repo.add(report({ ...hour, nbHours: 2, createdAt: daysAgo(n) }));
       }
-      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'maths', nbHours: 1 }));
-      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'sport', nbHours: 1 }));
-      await repo.add(report({ ...hour, schoolId: 'B', discipline: 'svt', nbHours: 1 }));
+      const corse = { ...hour, schoolId: 'B', departement: '2A', nbHours: 1 };
+      await repo.add(report({ ...corse, discipline: 'maths' }));
+      await repo.add(report({ ...corse, discipline: 'sport' }));
+      await repo.add(report({ ...corse, discipline: 'svt' }));
 
-      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+      const top = await repo.top({ departement: null, dimension: 'departement', limit: 5 });
 
       expect(top).toEqual([
-        { key: 'B', totalHours: 3, events: 3, submissions: 3 },
-        { key: 'A', totalHours: 2, events: 1, submissions: 4 },
+        { key: '2A', totalHours: 3, events: 3, submissions: 3 },
+        { key: '75', totalHours: 2, events: 1, submissions: 4 },
       ]);
     });
 
@@ -573,7 +598,7 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       await repo.add(report({ ...hour, createdAt: daysAgo(2) }));
       await repo.add(report({ ...hour, createdAt: daysAgo(1) }));
 
-      const [entry] = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+      const [entry] = await repo.top({ departement: '75', dimension: 'departement', limit: 5 });
 
       expect(entry.events).toBe(1);
       expect(entry.submissions).toBe(2);
@@ -620,9 +645,10 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
 
       expect((await repo.stats()).total_hours).toBe(2);
       // And the surviving département is the non-null one, so the event still
-      // appears in that département's ranking.
-      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
-      expect(top).toEqual([{ key: 'A', totalHours: 2, events: 1, submissions: 2 }]);
+      // appears in that département's ranking — under '75', not dropped as
+      // unplaceable.
+      const top = await repo.top({ departement: '75', dimension: 'departement', limit: 5 });
+      expect(top).toEqual([{ key: '75', totalHours: 2, events: 1, submissions: 2 }]);
     });
   });
 });

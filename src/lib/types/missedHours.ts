@@ -73,19 +73,19 @@ export interface MissedHourStats {
   classes_affected: number;
 }
 
-/** What a ranking groups by: schools, or the subjects that went untaught. */
-export type TopDimension = 'school' | 'discipline';
+/** What a ranking groups by: départements, or the subjects that went untaught. */
+export type TopDimension = 'departement' | 'discipline';
 
 /** One row of a ranking — see `MissedHourRepo.top`. */
 export interface TopMissedHours {
   /**
-   * The grouped value: a school's UAI code when the dimension is `school`, a
-   * discipline id when it is `discipline`.
+   * The grouped value: a département code (`'75'`, `'2A'`) when the dimension is
+   * `departement`, a discipline id when it is `discipline`.
    *
-   * Deliberately an opaque id, not a label. Schools are named by the CSV
-   * registry and disciplines by `$lib/disciplines`, neither of which the storage
-   * layer has any business knowing about — so the rendering happens where the
-   * labels live.
+   * Deliberately an opaque id, not a label. Départements are named by
+   * `$lib/departements` and disciplines by `$lib/disciplines`, neither of which
+   * the storage layer has any business knowing about — so the rendering happens
+   * where the labels live.
    */
   key: string;
   /** Hours actually lost — each distinct missed hour counted once. */
