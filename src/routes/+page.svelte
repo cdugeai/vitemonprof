@@ -116,7 +116,14 @@
               </div>
             </div>
 
-            {#if !canSubmit && form}
+            <!--
+              Keyed on the server's error, not on `canSubmit`: `form` is set after
+              *any* completed submission, so pairing it with the client-side
+              readiness check lit this up on success too (the form resets on the
+              full-page POST, which makes `canSubmit` false again). Unmet-field
+              guidance is FormHint's job; this alert is only for a failed round trip.
+            -->
+            {#if form?.error}
               <Alert.Root variant="destructive">
                 <CircleAlertIcon />
                 <Alert.Title>Could not log those hours</Alert.Title>
