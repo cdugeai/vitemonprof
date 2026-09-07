@@ -56,7 +56,9 @@ Styling is **Tailwind CSS v4** (via `@tailwindcss/vite`) plus **shadcn-svelte** 
 ## `/api/schools` speaks gzipped JSON
 
 The endpoint answers with **gzip bytes typed `application/gzip`**, not JSON — the
-full registry is ~12.4 MB of JSON and ~3.2 MB gzipped. Compression is done with
+full registry is ~11.1 MB of JSON and ~2.5 MB gzipped. Coordinates are rounded to
+5 decimals (~1 m) on the way out, which alone is worth ~750 kB gzipped: the CSV's
+15-digit floats are noise that no compressor can squeeze. Compression is done with
 [pako](https://www.npmjs.com/package/pako) at both ends:
 
 - `$lib/server/gzip-json` — `gzipJson(value)` (bytes) and `gzipJsonResponse(bytes)`
