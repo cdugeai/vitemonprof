@@ -6,43 +6,7 @@ import { isDiscipline } from '$lib/disciplines';
 import { isClassLevel } from '$lib/classLevels';
 import { checkDuplicateSubmission, checkRateLimit } from '$lib/server/rateLimit';
 import { getSchoolsInfo } from '$lib/server/data';
-
-/**
- * `YYYY-MM-DD` and a genuine calendar date — `2026-02-31` matches the shape but
- * isn't a day, and `Date.parse` would quietly roll it over to March 3rd.
- * Round-tripping through ISO catches that.
- *
- * Also rejects future dates and anything older than ~1 school year (365 days).
- * The `date` column would reject bad input anyway, but a driver error surfaces as a
- * 500; validating here gives the user a 400 and a message they can act on.
- */
-function isCalendarDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-
-  const parsed = new Date(`${value}T00:00:00Z`);
-
-  if (Number.isNaN(parsed.getTime()) || !parsed.toISOString().startsWith(value)) {
-    return false;
-  }
-
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  // Reject future dates
-  if (parsed > today) {
-    return false;
-  }
-
-  // Reject dates older than ~1 school year (365 days)
-  const oneYearAgo = new Date(today);
-  oneYearAgo.setUTCDate(today.getUTCDate() - 365);
-
-  if (parsed < oneYearAgo) {
-    return false;
-  }
-
-  return true;
-}
+import { isReportableDate } from '$lib/reportDate';
 
 export const load: PageServerLoad = () => {
   // Returned as un-awaited promises so SvelteKit streams them: the page shell renders
@@ -101,7 +65,7 @@ export const actions = {
       return fail(400, { error: 'Date is required' });
     }
 
-    if (!isCalendarDate(String(date))) {
+    if (!isReportableDate(String(date))) {
       return fail(400, {
         error: 'Date must be valid, not in the future, and within the last year',
       });
