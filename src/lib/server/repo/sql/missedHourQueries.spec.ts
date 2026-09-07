@@ -63,6 +63,16 @@ describe('insertMissedHour', () => {
 
     expect(parameters.filter((p) => p === null)).toHaveLength(3);
   });
+
+  it('asks for the assigned id back', () => {
+    const { sql } = insertMissedHour(REPORT);
+
+    // The other half of "the sequence owns the id": nobody outside the database
+    // can know it, so the write has to say it out loud. Lose this clause and
+    // both SQL backends still insert fine and then throw on a row with no id —
+    // which is `insertedId`'s unreachable branch becoming reachable.
+    expect(sql).toMatch(/returning\s+"id"\s*$/i);
+  });
 });
 
 describe('listMissedHours', () => {

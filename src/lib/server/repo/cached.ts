@@ -54,13 +54,18 @@ export function withCache(repo: MissedHourRepo, options: CacheOptions = {}): Mis
 
   return {
     async add(mh) {
-      await repo.add(mh);
+      const id = await repo.add(mh);
 
       // Everything, not just the list: one report moves the totals, the rolling
       // window, and any ranking its school or discipline appears in. Narrower
       // invalidation would mean re-deriving in JS which rankings a row lands in
       // — the exact reasoning the SQL owns — to save re-running two queries.
       for (const lane of lanes) lane.invalidate();
+
+      // Invalidate first, answer second. The id is the wrapped store's, and
+      // returning it early would let a caller act on a row the cache still
+      // denies exists.
+      return id;
     },
 
     list: (limit) => lists.get(`list:${limit ?? 'all'}`, () => repo.list(limit)),

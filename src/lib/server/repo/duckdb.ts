@@ -3,7 +3,9 @@ import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import type { MissedHour, MissedHourStats, TopMissedHours } from '$lib/types/missedHours';
 import type { MissedHourRepo } from './types';
+import { insertedId } from './insertedId';
 import {
+  INSERT_ALIAS,
   LIST_ALIAS,
   TOP_ALIAS,
   insertMissedHour,
@@ -40,7 +42,14 @@ export function createDuckDbMissedHourRepo(connection: DuckDBConnection): Missed
   return {
     async add(mh) {
       const q = insertMissedHour(mh);
-      await connection.run(q.sql, bind(q));
+      // `runAndReadAll`, not `run`: the insert has a `returning` clause now, and
+      // its row is the only place the assigned id exists.
+      const reader = await connection.runAndReadAll(q.sql, bind(q));
+      const [row] = reader.getRowObjects();
+
+      // A bigint here, as every DuckDB integer is — `insertedId` is what turns
+      // it into the domain's `number`.
+      return insertedId(row?.[INSERT_ALIAS.id]);
     },
 
     async list(limit?: number) {

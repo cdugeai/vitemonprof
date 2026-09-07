@@ -1,7 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { MissedHourStats } from '$lib/types/missedHours';
+import type { MissedHourStats, NewMissedHour } from '$lib/types/missedHours';
 import type { MissedHourRepo } from './types';
 import { withCache } from './cached';
+
+/** One report to write; the fake ignores every field, so any valid one will do. */
+const REPORT: NewMissedHour = {
+  schoolId: '0761322Z',
+  class: '1ere',
+  classGroup: null,
+  discipline: 'maths',
+  date_: '2026-08-17',
+  nbHours: 2,
+  createdAt: '2026-08-18T09:00:00.000Z',
+  departement: '76',
+};
 
 const STATS: MissedHourStats = {
   total_hours: 12,
@@ -21,10 +33,14 @@ const STATS: MissedHourStats = {
 function createFakeRepo() {
   const calls: string[] = [];
   let pending: PromiseWithResolvers<void> | null = null;
+  let nextId = 1;
 
   const repo: MissedHourRepo = {
     async add() {
       calls.push('add');
+      // Distinct ids, so a test can tell "the wrapper passed the store's answer
+      // through" apart from "the wrapper made one up".
+      return nextId++;
     },
     async list(limit) {
       calls.push(`list:${limit ?? 'all'}`);
@@ -99,16 +115,7 @@ describe('withCache', () => {
     await cached.top({ departement: null, dimension: 'school', limit: 5 });
     calls.length = 0;
 
-    await cached.add({
-      schoolId: '0761322Z',
-      class: '1ere',
-      classGroup: null,
-      discipline: 'maths',
-      date_: '2026-08-17',
-      nbHours: 2,
-      createdAt: new Date().toISOString(),
-      departement: '76',
-    });
+    await cached.add(REPORT);
 
     await cached.list(5);
     await cached.stats();
@@ -117,6 +124,24 @@ describe('withCache', () => {
     // A new report moves the list, both totals and any ranking it belongs to, so
     // all three lanes have to be cold again.
     expect(calls).toEqual(['add', 'list:5', 'stats', 'top:all:school:5']);
+  });
+
+  it('passes the store’s id back through, after invalidating', async () => {
+    const { repo, calls } = createFakeRepo();
+    const cached = withCache(repo, quiet);
+
+    await cached.list(5);
+    calls.length = 0;
+
+    // The wrapper is a cache, not a store: the id belongs to whatever it wraps,
+    // and swallowing it would leave the submission action with nothing to log.
+    expect(await cached.add(REPORT)).toBe(1);
+    expect(await cached.add(REPORT)).toBe(2);
+
+    // And it is answered *after* the lanes are cold, not before — a caller that
+    // acts on the id must not be able to read a list that predates the row.
+    await cached.list(5);
+    expect(calls).toEqual(['add', 'add', 'list:5']);
   });
 
   it('stops serving an entry once its ttl has passed', async () => {
@@ -153,16 +178,7 @@ describe('withCache', () => {
     hold();
     const inFlight = cached.list(5);
 
-    await cached.add({
-      schoolId: '0761322Z',
-      class: '1ere',
-      classGroup: null,
-      discipline: 'maths',
-      date_: '2026-08-17',
-      nbHours: 2,
-      createdAt: new Date().toISOString(),
-      departement: '76',
-    });
+    await cached.add(REPORT);
 
     release();
     await inFlight;

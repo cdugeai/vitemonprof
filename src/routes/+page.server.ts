@@ -125,14 +125,30 @@ export const actions = {
     // département-scoped query then excludes.
     const school = getSchoolsInfo([String(schoolId)]).get(String(schoolId));
 
-    // No id: `missed_hour.id` is a sequence now, so the store assigns it. The
-    // action never needed to know it — it answers with a redirect, not with the
-    // row — which is what made the client-generated UUID safe to drop.
-    await missedHourRepo.add({
+    // No id going in: `missed_hour.id` is a sequence, so the store assigns it and
+    // hands it back. The response still doesn't carry it — this is a redirect,
+    // not a row — but the log line below does.
+    const id = await missedHourRepo.add({
       ...report,
       departement: school?.departement ?? null,
       createdAt: new Date().toISOString(),
     });
+
+    // The only trace an accepted report leaves. Without it the access log shows a
+    // bare 201 — proof that *something* was filed, and nothing about what — so
+    // this is what turns a status code into a row you can go and look at.
+    //
+    // `departement` is here, and not because the form sent it: it is resolved
+    // from the registry, and a school id that resolves to nothing is the one
+    // silent way a report ends up worth less than it looks — every
+    // département-scoped query excludes it. `unknown` is where that shows.
+    //
+    // No IP, and nothing free-text: an access log is not the place to widen what
+    // an anonymous report says about who filed it.
+    console.log(
+      `[submission] report ${id} accepted school=${report.schoolId} ` +
+        `departement=${school?.departement ?? 'unknown'} date=${report.date_} hours=${report.nbHours}`
+    );
 
     // 201 Created, for the enhanced path only. `use:enhance` fetches this
     // endpoint and reads the outcome out of the JSON body, so SvelteKit answers
