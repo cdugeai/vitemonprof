@@ -4,6 +4,7 @@
   import Input from '../ui/input/input.svelte';
   import { Label } from '$lib/components/ui/label';
   import { buildLabelSchool } from '$lib/utils';
+  import { createSelectSearchFocus } from './searchableSelect';
 
   let {
     // eslint-disable-next-line no-useless-assignment
@@ -85,40 +86,7 @@
     if (!isOpen) typedText = '';
   }
 
-  // Not `$state`: only ever read from event handlers, never from the template.
-  let searchInput: HTMLInputElement | null = null;
-
-  /**
-   * Grab a handle on the search field and put the caret in it as soon as it mounts.
-   *
-   * An attachment rather than the `autofocus` attribute because `Select.Content` is only
-   * mounted while open, so this re-runs on every open. `requestAnimationFrame` lets the
-   * popper finish positioning first — focusing sooner can scroll to where the content
-   * *was* — and `preventScroll` covers the rest.
-   *
-   * This is what handles opening via the keyboard (Enter / Space / ArrowDown).
-   */
-  function searchField(node: HTMLInputElement) {
-    searchInput = node;
-    const frame = requestAnimationFrame(() => node.focus({ preventScroll: true }));
-
-    return () => {
-      cancelAnimationFrame(frame);
-      searchInput = null;
-    };
-  }
-
-  /**
-   * ...and this is what handles opening with the mouse. bits-ui parks focus on the trigger
-   * and re-focuses it from its own `onclick` handler, which fires *after* the content has
-   * mounted — so the focus above loses that race on a real click, where pointerdown and
-   * click straddle a frame. Rather than fight it with a longer timer, bounce focus to the
-   * search field whenever the trigger receives it while the dropdown is open. The `open`
-   * check keeps the guard inert once closed, so the trigger holds focus normally then.
-   */
-  function onTriggerFocus() {
-    if (open) searchInput?.focus({ preventScroll: true });
-  }
+  const search = createSelectSearchFocus(() => open);
 
   function onValueChange(value: string) {
     // Update School when Id is updated
@@ -130,7 +98,7 @@
   <Label for="sel-school" class="px-1 text-sm font-semibold">Établissement</Label>
   <Select.Trigger
     class="bg-mybeige-bg w-full overflow-hidden"
-    onfocus={onTriggerFocus}
+    onfocus={search.onTriggerFocus}
     id="sel-school"
   >
     <span class="overflow-hidden">
@@ -140,7 +108,7 @@
   <Select.Content class="max-h-65 ">
     <Select.Group>
       <Select.Label>Établissement</Select.Label>
-      <Input bind:value={typedText} class="my-1" placeholder="Rechercher" {@attach searchField} />
+      <Input bind:value={typedText} class="my-1" placeholder="Rechercher" {@attach search.field} />
       {#each schoolOptions as school_ (school_.value)}
         <Select.Item value={school_.value} label={school_.label}>
           {school_.label}
