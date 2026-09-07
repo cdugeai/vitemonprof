@@ -1,9 +1,7 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card';
-  import { getSchoolsInfo } from '$lib/server/db_tmp';
   import type { MissedHour } from '$lib/types/missedHours';
   import type { School } from '$lib/types/school';
-  import { onMount } from 'svelte';
 
   interface Props {
     missed_hours: MissedHour[];
@@ -16,10 +14,52 @@
 
   let schools_infos: Map<string, School> = $state(new Map());
 
-  onMount(async () => {
-    let r = await getSchoolsInfo(missed_hours_to_display.map((mh1) => mh1.schoolId));
-    schools_infos = r;
+  /**
+   * Fetch school infos from the API
+   * @param ids
+   * @param signal
+   */
+  async function fetchSchoolsInfo(
+    ids: string[],
+    signal: AbortSignal
+  ): Promise<Map<string, School>> {
+    const query = new URLSearchParams(ids.map((id) => ['id', id]));
+    const res = await fetch(`/api/schools?${query}`, { signal });
+
+    if (!res.ok) {
+      throw new Error(`GET /api/schools failed: ${res.status}`);
+    }
+
+    const schools: School[] = await res.json();
+
+    return new Map(schools.map((s) => [s.id, s]));
+  }
+
+  // `$effect` (not `onMount`) because the ids depend on props: the reports list
+  // arrives asynchronously and can change, and onMount would only ever fetch once.
+  // Effects never run during SSR, so the relative URL is always browser-side here.
+  $effect(() => {
+    const ids = [...new Set(missed_hours_to_display.map((mh) => mh.schoolId))];
+
+    if (ids.length === 0) {
+      schools_infos = new Map();
+      return;
+    }
+
+    // Aborting on cleanup drops the in-flight request when the ids change again,
+    // so a slow earlier response can never overwrite a newer one.
+    const controller = new AbortController();
+
+    fetchSchoolsInfo(ids, controller.signal)
+      .then((r) => (schools_infos = r))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error(err);
+      });
+
+    return () => controller.abort();
   });
+
+  const diffMinutes = (ts: string) => (Date.now() - new Date(ts).getTime()) / 1000 / 60;
 </script>
 
 <!-- Recent Reports -->
@@ -35,8 +75,12 @@
         <div class="py-8 text-center text-gray-500">No reports yet</div>
       {:else}
         {#each missed_hours_to_display as mh (mh.uuid)}
-          <p>{mh.schoolId}</p>
-          <p>{schools_infos.get(mh.schoolId)?.name}</p>
+          {@const school_info = schools_infos.get(mh.schoolId)}
+          <div class="flex gap-2">
+            <p>{Math.trunc(diffMinutes(mh.createdAt))} min ago -</p>
+            <p>{school_info?.name} ({school_info?.postalCode}) -</p>
+            <p>{mh.nbHours} hour(s) in {mh.class}</p>
+          </div>
         {/each}
       {/if}
     </div>
