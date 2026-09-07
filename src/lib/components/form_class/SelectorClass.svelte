@@ -1,50 +1,50 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select/index.js';
   import { Label } from '$lib/components/ui/label';
+  import {
+    CLASS_CYCLES,
+    CLASS_CYCLE_LABELS,
+    classLevelLabel,
+    classLevelsInCycle,
+    type ClassLevel,
+  } from '$lib/classLevels';
 
-  let {
-    selectedClass = $bindable(undefined),
-  }: {
-    selectedClass: string | undefined;
-  } = $props();
+  interface Props {
+    selectedClass?: ClassLevel;
+  }
 
-  const classOptions = [
-    { value: 'cp', label: 'CP' },
-    { value: 'ce1', label: 'CE1' },
-    { value: 'ce2', label: 'CE2' },
-    { value: 'cm1', label: 'CM1' },
-    { value: 'cm2', label: 'CM2' },
-    { value: '6e', label: '6e' },
-    { value: '5e', label: '5e' },
-    { value: '4e', label: '4e' },
-    { value: '3e', label: '3e' },
-    { value: '2nde', label: '2nde' },
-    { value: '1ere', label: '1ère' },
-    { value: 'term', label: 'Terminale' },
-  ];
-
-  let optionDisabled = false;
-
-  let selectedClassLabel = $derived(classOptions.find((c) => c.value == selectedClass));
+  let { selectedClass = $bindable() }: Props = $props();
 
   const triggerContent = $derived(
-    classOptions.find((f) => f.value === selectedClass)?.label ?? 'Sélectionner une classe'
+    selectedClass ? classLevelLabel(selectedClass) : 'Sélectionner une classe'
   );
 </script>
 
+<!--
+  The options come from `$lib/classLevels` rather than a list inlined here, so the
+  same mapping that renders this dropdown is what turns `1ere` back into « 1ère »
+  in the reports list — previously the label existed only inside this component,
+  which is why the list showed raw ids.
+
+  Grouped by cycle for the same reason `SelectorDiscipline` is: twelve options in
+  three familiar blocks scan far better than one flat twelve. No search box here —
+  twelve short labels do not need one.
+-->
 <Select.Root type="single" name="selected_class" bind:value={selectedClass}>
   <Label for="sel-class" class="px-1">Classe</Label>
   <Select.Trigger class="bg-mybeige-bg w-full" id="sel-class">
     {triggerContent}
   </Select.Trigger>
   <Select.Content>
-    <Select.Group>
-      <Select.Label>Classes</Select.Label>
-      {#each classOptions as class_ (class_.value)}
-        <Select.Item value={class_.value} label={class_.label} disabled={optionDisabled}>
-          {class_.label}
-        </Select.Item>
-      {/each}
-    </Select.Group>
+    {#each CLASS_CYCLES as cycle (cycle)}
+      <Select.Group>
+        <Select.Label>{CLASS_CYCLE_LABELS[cycle]}</Select.Label>
+        {#each classLevelsInCycle(cycle) as level (level.id)}
+          <Select.Item value={level.id} label={level.label}>
+            {level.label}
+          </Select.Item>
+        {/each}
+      </Select.Group>
+    {/each}
   </Select.Content>
 </Select.Root>

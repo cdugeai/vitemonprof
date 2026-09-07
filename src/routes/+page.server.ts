@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { missedHourRepo } from '$lib/server/repo';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
+import { isClassLevel } from '$lib/classLevels';
 import { randomUUID } from 'crypto';
 
 /**
@@ -49,8 +50,12 @@ export const actions = {
       return fail(400, { error: 'School is required' });
     }
 
-    if (!className || className === 'none') {
+    if (!className) {
       return fail(400, { error: 'Class is required' });
+    }
+
+    if (!isClassLevel(String(className))) {
+      return fail(400, { error: 'Unknown class' });
     }
 
     if (classGroup && !isClassGroup(String(classGroup))) {
