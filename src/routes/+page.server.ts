@@ -69,6 +69,11 @@ export const actions = {
     // browser's history entry for `/` stays a POST, so a refresh replays the submission
     // ("Confirm Form Resubmission") and inserts the report a second time. The 303 turns
     // that entry into a plain GET, which is safe to reload as many times as you like.
-    redirect(303, '/');
+    //
+    // The redirect discards the action's return value, so `form` is null on the next
+    // render and can't carry the confirmation. `?submitted` is the flash instead: it
+    // survives the redirect and works with or without JS. The page scrubs it from the
+    // URL once it has been read.
+    redirect(303, '/?submitted');
   },
 } satisfies Actions;

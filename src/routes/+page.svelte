@@ -8,6 +8,10 @@
   import CardReport from '$lib/components/form_class/CardReport.svelte';
   import { CalendarDate } from '@internationalized/date';
   import { dateToStr } from '$lib/utils';
+  import * as Alert from '$lib/components/ui/alert';
+  import CircleCheck from '@lucide/svelte/icons/circle-check';
+  import CircleAlert from '@lucide/svelte/icons/circle-alert';
+  import { page } from '$app/state';
 
   let selectedClass: string | undefined = $state();
   let selectedSchool: School | undefined = $state();
@@ -21,6 +25,20 @@
   // the page data re-fetched. Guards against the double-submit you'd otherwise get by
   // tapping "Envoyer" twice while the request is in flight.
   let submitting = $state(false);
+
+  // The action redirects to `/?submitted`, so the URL is what carries the confirmation
+  // across the redirect — it survives with or without JS, unlike the `form` prop, which a
+  // redirect discards.
+  //
+  // Seeded into `$state` rather than `$derived` straight off the URL because the flag has
+  // to be *dismissable*: a failed re-submit leaves the URL untouched, so a derived flag
+  // would leave "Rapport enregistré" sitting next to the new error. The `use:enhance`
+  // callback clears it when a fresh attempt starts.
+  let showSuccess = $state(false);
+
+  $effect(() => {
+    if (page.url.searchParams.has('submitted')) showSuccess = true;
+  });
 
   // Client-side guardrail: reuses FormHint's rules so the button and the hint
   // can never disagree. This only improves UX — the server action stays the real
@@ -64,6 +82,7 @@
     class="grid grid-cols-1 gap-8 lg:grid-cols-3"
     use:enhance={() => {
       submitting = true;
+      showSuccess = false; // a new attempt retires the previous confirmation
       return async ({ update }) => {
         await update();
         submitting = false;
@@ -81,8 +100,29 @@
         {canSubmit}
         {submitting}
       />
+      <!--
+        `Alert.Root` already renders `role="alert"`, so screen readers announce these the
+        moment they appear — no extra ARIA needed. The success case has no `variant` of its
+        own in shadcn-svelte (only `default` and `destructive`), so it borrows the app's
+        green via utility classes rather than a new variant.
+      -->
+      {#if showSuccess}
+        <Alert.Root class="mt-4 border-green-600/30 bg-green-50 text-green-900">
+          <CircleCheck class="text-green-600" />
+          <Alert.Title>Rapport enregistré</Alert.Title>
+          <Alert.Description class="text-green-800">
+            Merci ! Votre signalement a bien été pris en compte et apparaît maintenant dans les
+            rapports récents.
+          </Alert.Description>
+        </Alert.Root>
+      {/if}
+
       {#if form?.error}
-        <p class="mt-2 text-center text-sm text-red-600" role="alert">{form.error}</p>
+        <Alert.Root variant="destructive" class="mt-4">
+          <CircleAlert />
+          <Alert.Title>Le rapport n'a pas pu être envoyé</Alert.Title>
+          <Alert.Description>{form.error}</Alert.Description>
+        </Alert.Root>
       {/if}
       <input type="hidden" name="nbHours" value={nbHours} />
       <input type="hidden" name="dept" value={selectedDept} />
