@@ -16,6 +16,10 @@
   // preload a *different* URL and cost an extra download instead of saving one.
   import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2';
 
+  import { dev } from '$app/environment';
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+
+  injectAnalytics({ mode: dev ? 'development' : 'production' });
   let { children } = $props();
 
   const CONTACT_EMAIL = 'contact@vitemonprof.fr';
