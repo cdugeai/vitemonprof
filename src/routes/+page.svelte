@@ -54,7 +54,7 @@
         toast.success("Merci, c'est enregistré", {
           // Terser than the alert below: a toast is read in passing, and the list it
           // points at is right there on the page.
-          description: 'Votre signalement apparaît dès maintenant dans les signalements récents.',
+          description: 'Votre soumission apparaît dès maintenant dans les soumissions récentes.',
         });
         // Retires a failure left over from a submit made *before* hydration, which is
         // the one way `form` can be set while JS is running. `form` only resets on
@@ -67,10 +67,10 @@
         // has to be applied to the page to display it. Not calling `update()` here is
         // deliberate — it would set the `form` prop, and the alert below would then
         // say the same thing a second time, in a second place.
-        toast.error("Le signalement n'a pas pu être envoyé", {
+        toast.error("La soumission n'a pas pu être envoyée", {
           description: result.data?.error ?? 'Merci de réessayer dans un instant.',
           // Longer than the success toast: this one asks the reader to do something
-          // about it, and "vous avez déjà effectué ce signalement" takes two lines.
+          // about it, and "vous avez déjà effectué cette soumission" takes two lines.
           duration: 8000,
         });
       } else {
@@ -109,7 +109,7 @@
       </h1>
       <p class="text-muted-foreground text-lg">
         La comptabilisation des absences de courte durée non remplacées est une donnée difficile à
-        obtenir et consolider au niveau national. ViteMonProf rassemble les signalements des
+        obtenir et consolider au niveau national. ViteMonProf rassemble les soumissions des
         familles, élèves et personnels pour en donner une vue d'ensemble — dans votre établissement,
         votre département et partout en France.
       </p>
@@ -157,8 +157,8 @@
           <CircleCheck class="text-green-600" />
           <Alert.Title>Merci, c'est enregistré</Alert.Title>
           <Alert.Description class="text-green-800">
-            Votre signalement rejoint ceux des autres contributeurs et apparaît dès maintenant dans
-            les signalements récents.
+            Votre soumission rejoint celles des autres contributeurs et apparaît dès maintenant dans
+            les soumissions récentes.
           </Alert.Description>
         </Alert.Root>
       {/if}
@@ -173,7 +173,7 @@
       {#if form?.error}
         <Alert.Root variant="destructive" class="mt-4">
           <CircleAlert />
-          <Alert.Title>Le signalement n'a pas pu être envoyé</Alert.Title>
+          <Alert.Title>La soumission n'a pas pu être envoyée</Alert.Title>
           <Alert.Description>{form.error}</Alert.Description>
         </Alert.Root>
       {/if}
@@ -208,9 +208,9 @@
         <section class="shrink-0">
           <Card.Root>
             <Card.Header>
-              <Card.Title>Ce que disent les signalements</Card.Title>
+              <Card.Title>Ce que disent les soumissions</Card.Title>
               <Card.Description>
-                Une heure signalée par plusieurs personnes n'est comptée qu'une fois.
+                Une heure soumise par plusieurs personnes n'est comptée qu'une fois.
               </Card.Description>
             </Card.Header>
             <Card.Content>
@@ -258,7 +258,7 @@
     </div>
     <div class="rounded-lg bg-green-50 p-4 text-center">
       <p class="text-3xl font-bold text-green-600">{last7d}</p>
-      <p class="text-sm text-gray-600">Signalées ces 7 derniers jours</p>
+      <p class="text-sm text-gray-600">Soumises ces 7 derniers jours</p>
     </div>
     <div class="rounded-lg bg-yellow-50 p-4 text-center">
       <p class="text-3xl font-bold text-yellow-600">{schools}</p>

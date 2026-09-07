@@ -39,7 +39,7 @@ test.describe('rate limiting', () => {
           const text = await res.text();
           return {
             status: res.status,
-            isRateLimited: text.includes('Trop de signalements'),
+            isRateLimited: text.includes('Trop de soumissions'),
           };
         },
         { schoolId: `test-school-${i}`, class: '6e', date: '2026-08-20', nbHours: '1' }
@@ -87,7 +87,7 @@ test.describe('rate limiting', () => {
       const text = await res.text();
       return {
         status: res.status,
-        isRateLimited: text.includes('Trop de signalements'),
+        isRateLimited: text.includes('Trop de soumissions'),
         hasErrorMessage: text.includes('patienter une minute'),
       };
     });
@@ -133,12 +133,12 @@ test.describe('rate limiting', () => {
 
       const text = await res.text();
       // Look for the error message in the response
-      if (text.includes('Trop de signalements')) {
-        return 'Trop de signalements coup sur coup. Merci de patienter une minute.';
+      if (text.includes('Trop de soumissions')) {
+        return 'Trop de soumissions coup sur coup. Merci de patienter une minute.';
       }
       return null;
     });
 
-    expect(errorMessage).toBe('Trop de signalements coup sur coup. Merci de patienter une minute.');
+    expect(errorMessage).toBe('Trop de soumissions coup sur coup. Merci de patienter une minute.');
   });
 });

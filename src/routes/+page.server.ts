@@ -41,7 +41,7 @@ export const actions = {
     // Rate limit: max 5 requests per minute per IP
     const clientIp = getClientAddress();
     if (!checkRateLimit(clientIp)) {
-      return reject(429, 'Trop de signalements coup sur coup. Merci de patienter une minute.');
+      return reject(429, 'Trop de soumissions coup sur coup. Merci de patienter une minute.');
     }
 
     const formData = await request.formData();
@@ -114,7 +114,7 @@ export const actions = {
     // double-tapped button or a replayed form, and no legitimate flow produces
     // it.
     if (!checkDuplicateSubmission(clientIp, report)) {
-      return reject(429, 'Vous avez déjà effectué ce signalement.');
+      return reject(429, 'Vous avez déjà effectué cette soumission.');
     }
 
     // Resolved here, from the registry, rather than taken from the form. The

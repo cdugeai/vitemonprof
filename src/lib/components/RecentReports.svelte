@@ -128,7 +128,7 @@
    * from one anonymous claim to two people agreeing — so it gets the emphasis;
    * beyond three the extra confidence is real but marginal, and a widening ramp
    * would compete with the hours tile for the eye. Below two there is no badge
-   * at all: "signalé 1 fois" is noise on every row, and an absent badge already
+   * at all: "soumis 1 fois" is noise on every row, and an absent badge already
    * says it.
    */
   function corroborationTone(count: number): string {
@@ -140,7 +140,7 @@
 
 <Card.Root class={cn(className)}>
   <Card.Header>
-    <Card.Title>Signalements récents</Card.Title>
+    <Card.Title>Soumissions récentes</Card.Title>
     <Card.Description>Les dernières contributions enregistrées.</Card.Description>
   </Card.Header>
   <!--
@@ -178,8 +178,8 @@
         <span class="bg-muted text-muted-foreground rounded-full p-3">
           <Inbox class="size-5" />
         </span>
-        <p class="text-sm font-medium">Aucun signalement pour le moment</p>
-        <p class="text-muted-foreground text-sm">Les signalements envoyés apparaîtront ici.</p>
+        <p class="text-sm font-medium">Aucune soumission pour le moment</p>
+        <p class="text-muted-foreground text-sm">Les soumissions envoyées apparaîtront ici.</p>
       </div>
     {:else}
       <!--
@@ -252,10 +252,10 @@
                   <Badge
                     variant="outline"
                     class={corroborationTone(mh.corroborations)}
-                    title="{mh.corroborations} personnes ont signalé cette même heure. Des signalements concordants rendent l’information plus fiable, et l’heure n’est comptée qu’une fois dans les totaux."
+                    title="{mh.corroborations} personnes ont soumis cette même heure. Des soumissions concordantes rendent l’information plus fiable, et l’heure n’est comptée qu’une fois dans les totaux."
                   >
                     <Users class="size-3" aria-hidden="true" />
-                    Signalé {mh.corroborations} fois
+                    Soumis {mh.corroborations} fois
                   </Badge>
                 {/if}
                 <span class="sr-only">
