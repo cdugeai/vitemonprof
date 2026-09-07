@@ -104,6 +104,14 @@
           Une question, une remarque, une erreur à signaler ? Les coordonnées de contact figurent
           dans les mentions légales.
         </p>
+        <p class="text-gray-700">
+          L'auteur de ce site est
+          <a
+            href="https://www.linkedin.com/in/colin-dugeai"
+            target="_blank"
+            class="text-blue-600 underline">Colin DUGEAI</a
+          >.
+        </p>
         <Button href="/mentions-legales" variant="outline" class="mt-4">Mentions légales</Button>
       </section>
     </Card.Content>
