@@ -1,34 +1,35 @@
 <script lang="ts">
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import Button from '../ui/button/button.svelte';
-  const DEFAULT_NB_HOURS = 1;
-  const MAX_NB_HOURS = 4;
-  const MIN_NB_HOURS = 1;
+  import * as ToggleGroup from '$lib/components/ui/toggle-group';
+
+  const HOUR_OPTIONS = [1, 2, 3, 4];
+  const DEFAULT_NB_HOURS = HOUR_OPTIONS[0];
 
   interface Props {
     nbHours?: number;
   }
 
   let { nbHours = $bindable(DEFAULT_NB_HOURS) }: Props = $props();
-  let inc = () => (nbHours = Math.min(nbHours + 1, MAX_NB_HOURS));
-  let dec = () => (nbHours = Math.max(nbHours - 1, MIN_NB_HOURS));
 </script>
 
-<Label for="nb_hours">Nombre d'heures de classe</Label>
-<div class="flex gap-1">
-  <Button variant="outline" class="px-10 sm:px-15" onclick={dec}>-</Button>
-  <Button variant="default" class="px-10 sm:px-15" onclick={inc}>+</Button>
-  <Input
-    id="nb_hours"
-    type="number"
-    name="nbHours"
-    max={MAX_NB_HOURS}
-    min={MIN_NB_HOURS}
-    step="1"
-    bind:value={nbHours}
-    required
-    class="bg-mybeige-bg md:max-w-1/2"
-    disabled
-  />
-</div>
+<span id="nb-hours-label" class="px-1 text-sm leading-none font-medium select-none">
+  Nombre d'heures de classe
+</span>
+<ToggleGroup.Root
+  type="single"
+  variant="outline"
+  size="lg"
+  aria-labelledby="nb-hours-label"
+  class="w-full"
+  // So wont de-select value when clicking a second time on it
+  bind:value={() => String(nbHours), (value) => (nbHours = Number(value) || nbHours)}
+>
+  {#each HOUR_OPTIONS as hours (hours)}
+    <ToggleGroup.Item
+      value={String(hours)}
+      aria-label={`${hours} heure${hours > 1 ? 's' : ''}`}
+      class="bg-mybeige-bg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-11 flex-1 text-base tabular-nums"
+    >
+      {hours}
+    </ToggleGroup.Item>
+  {/each}
+</ToggleGroup.Root>
