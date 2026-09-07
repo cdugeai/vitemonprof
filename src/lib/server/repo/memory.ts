@@ -13,13 +13,19 @@ import { STATS_WINDOW_DAYS, type MissedHourRepo } from './types';
 export function createMemoryMissedHourRepo(maxWaitTimeS = 3): MissedHourRepo {
   const rows: MissedHour[] = [];
 
+  // The stand-in for `missed_hour_id_seq`. Counting rows instead would be wrong
+  // the moment a delete exists — a sequence never reissues a number, and the
+  // conformance suite holds every backend to the same promise.
+  let nextId = 1;
+
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
   const jitter = () => delay(Math.random() * maxWaitTimeS * 1000);
 
   return {
     async add(mh) {
       await jitter();
-      rows.push(mh);
+      rows.push({ ...mh, id: nextId });
+      nextId += 1;
     },
 
     async list() {

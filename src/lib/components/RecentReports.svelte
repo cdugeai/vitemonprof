@@ -156,7 +156,7 @@
         The previous stack of `<div>`s carried none of that.
       -->
       <ul class="space-y-2">
-        {#each missed_hours_to_display as mh (mh.uuid)}
+        {#each missed_hours_to_display as mh (mh.id)}
           {@const school = schools_infos.get(mh.schoolId)}
           <li
             class="hover:bg-muted/40 flex items-center gap-3 rounded-xl border p-3 transition-colors"

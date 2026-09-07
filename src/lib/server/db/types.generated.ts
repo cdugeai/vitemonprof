@@ -17,9 +17,9 @@ export interface MissedHour {
   created_at: Generated<Timestamp>;
   date: Timestamp;
   discipline: string | null;
+  id: Generated<number>;
   nb_hours: number;
   school_id: string;
-  uuid: string;
 }
 
 export interface Task {

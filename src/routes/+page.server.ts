@@ -4,7 +4,6 @@ import { missedHourRepo } from '$lib/server/repo';
 import { isClassGroup } from '$lib/classGroups';
 import { isDiscipline } from '$lib/disciplines';
 import { isClassLevel } from '$lib/classLevels';
-import { randomUUID } from 'crypto';
 
 /**
  * `YYYY-MM-DD` and a genuine calendar date — `2026-02-31` matches the shape but
@@ -82,10 +81,10 @@ export const actions = {
       return fail(400, { error: 'Hours must be between 1 and 4' });
     }
 
-    // The store never invents an id: generating it here means the caller knows what it
-    // wrote without a round trip, and every backend behaves the same way.
+    // No id: `missed_hour.id` is a sequence now, so the store assigns it. The
+    // action never needed to know it — it answers with a redirect, not with the
+    // row — which is what made the client-generated UUID safe to drop.
     await missedHourRepo.add({
-      uuid: randomUUID(),
       schoolId: String(schoolId),
       class: String(className),
       // The empty string is what a form sends for "nothing chosen"; the store only

@@ -1,4 +1,4 @@
-import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
+import type { MissedHour, MissedHourStats, NewMissedHour } from '$lib/types/missedHours';
 
 /**
  * The storage port for missed-hour reports.
@@ -15,8 +15,17 @@ import type { MissedHour, MissedHourStats } from '$lib/types/missedHours';
  * The implementation maps to the domain shape; callers stay ignorant of storage.
  */
 export interface MissedHourRepo {
-  /** Persist one report. `uuid` is supplied by the caller, not the store. */
-  add(mh: MissedHour): Promise<void>;
+  /**
+   * Persist one report.
+   *
+   * The argument is a `NewMissedHour`: the id is the store's to assign, and it
+   * does not come back out of this call. That is a deliberate narrowing of the
+   * old contract, where the caller minted a UUID and therefore knew the id
+   * without a round trip — a sequence lives in the database, so that is no longer
+   * true for anybody. Nothing needs it today; the day something does, this
+   * returns the stored row rather than having callers guess.
+   */
+  add(mh: NewMissedHour): Promise<void>;
 
   /**
    * All reports, **newest first** (`createdAt` descending).

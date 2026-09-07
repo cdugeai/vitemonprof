@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { MissedHour } from '$lib/types/missedHours';
+import type { NewMissedHour } from '$lib/types/missedHours';
 import { insertMissedHour, listMissedHours, statsMissedHours } from './missedHourQueries';
 
-const REPORT: MissedHour = {
-  uuid: '00000000-0000-4000-8000-000000000001',
+const REPORT: NewMissedHour = {
   schoolId: '0761322Z',
   class: '1ere',
   classGroup: 'C',
@@ -14,6 +13,19 @@ const REPORT: MissedHour = {
 };
 
 describe('insertMissedHour', () => {
+  it('leaves the id to the sequence', () => {
+    const { sql } = insertMissedHour(REPORT);
+
+    // The column list, not the whole statement: `insert into "missed_hour"` is
+    // not a match, but a stray `"id"` among the columns would be. Naming it here
+    // would take the value from the caller and leave `missed_hour_id_seq`
+    // trailing behind the table.
+    const [, columns = ''] = /\(([^)]*)\)\s*values/i.exec(sql) ?? [];
+
+    expect(columns).not.toContain('"id"');
+    expect(columns).toContain('"school_id"');
+  });
+
   it('binds every value instead of interpolating it', () => {
     const { sql, parameters } = insertMissedHour(REPORT);
 
@@ -61,10 +73,9 @@ describe('listMissedHours', () => {
     expect(normalise(duckdb)).toBe(normalise(postgres));
   });
 
-  it('casts uuid and date to text so no driver wrapper reaches the domain', () => {
+  it('casts date to text so no driver wrapper reaches the domain', () => {
     const { sql } = listMissedHours('duckdb');
 
-    expect(sql).toContain('"uuid"::text');
     expect(sql).toContain('"date"::text');
   });
 

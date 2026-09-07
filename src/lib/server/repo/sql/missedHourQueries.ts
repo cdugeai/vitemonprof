@@ -8,7 +8,7 @@ import {
   type ExpressionBuilder,
 } from 'kysely';
 import type { DB } from '$lib/server/db/types.generated';
-import type { MissedHour } from '$lib/types/missedHours';
+import type { NewMissedHour } from '$lib/types/missedHours';
 import { STATS_WINDOW_DAYS } from '../types';
 
 /**
@@ -64,12 +64,18 @@ function createdAtMillis(eb: ExpressionBuilder<Database, 'missed_hour'>, dialect
     : sql<bigint>`(extract(epoch from ${column}) * 1000)::bigint`;
 }
 
-/** Insert one report. */
-export function insertMissedHour(mh: MissedHour): SqlQuery {
+/**
+ * Insert one report.
+ *
+ * No `id` in the values: the column defaults to `nextval('missed_hour_id_seq')`,
+ * and `types.generated.ts` types it as `Generated<number>` — so leaving it out is
+ * checked, not merely conventional. Supplying one here would work and then
+ * silently desynchronise the sequence from the table.
+ */
+export function insertMissedHour(mh: NewMissedHour): SqlQuery {
   return db
     .insertInto('missed_hour')
     .values({
-      uuid: mh.uuid,
       school_id: mh.schoolId,
       class: mh.class,
       class_group: mh.classGroup,
@@ -83,7 +89,7 @@ export function insertMissedHour(mh: MissedHour): SqlQuery {
 
 /** Column aliases `listMissedHours` selects into — shared so the row readers agree. */
 export const LIST_ALIAS = {
-  uuid: 'uuid',
+  id: 'id',
   schoolId: 'school_id',
   class: 'class',
   classGroup: 'class_group',
@@ -96,16 +102,21 @@ export const LIST_ALIAS = {
 /**
  * All reports, newest first.
  *
- * `uuid` and `date` are cast to text in SQL rather than converted in JS: DuckDB
- * would otherwise hand back `DuckDBUUIDValue` / `DuckDBDateValue` wrappers, and
- * the repo contract is that no engine type reaches the domain. Postgres is
- * unaffected by the cast, so one query serves both.
+ * `date` is cast to text in SQL rather than converted in JS: DuckDB would
+ * otherwise hand back a `DuckDBDateValue` wrapper, and the repo contract is that
+ * no engine type reaches the domain. Postgres is unaffected by the cast, so one
+ * query serves both.
+ *
+ * `id` needs no such treatment — it used to, when it was a `uuid` and DuckDB
+ * returned a `DuckDBUUIDValue`. Both drivers hand back a plain number for
+ * `integer`, so the column is selected as-is. One fewer cast is a small bonus of
+ * the narrower key.
  */
 export function listMissedHours(dialect: SqlDialect): SqlQuery {
   return db
     .selectFrom('missed_hour')
     .select((eb) => [
-      sql<string>`${eb.ref('uuid')}::text`.as(LIST_ALIAS.uuid),
+      'id',
       'school_id',
       'class',
       'class_group',
