@@ -73,10 +73,7 @@
         <div class="flex flex-col">
           <Card.Title>Signaler une classe manquée</Card.Title>
           <Card.Description>
-            <p>
-              Enregistrez quand un cours n'a pas pu se dérouler parce que le professeur était
-              absent.
-            </p>
+            Enregistrez quand un cours n'a pas pu se dérouler parce que le professeur était absent.
           </Card.Description>
         </div>
       </div>
