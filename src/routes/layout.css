@@ -1,1 +1,10 @@
 @import 'tailwindcss';
+
+/* Page background lives on <body>, not on a wrapper <div>: a wrapper is only as
+   wide as the viewport, so any horizontal overflow would expose bare white to
+   the right of it. The body/canvas background always paints the full document. */
+@layer base {
+  body {
+    background-color: var(--color-gray-50);
+  }
+}
