@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CLASS_LEVELS, classLevelLabel, classLevelsInCycle, isClassLevel } from './classLevels';
+import {
+  CLASS_CYCLES,
+  CLASS_LEVELS,
+  classLevelLabel,
+  classLevelsInCycle,
+  cyclesForSchoolName,
+  isClassLevel,
+} from './classLevels';
 
 describe('CLASS_LEVELS', () => {
   it('keeps the ids already written to the database', () => {
@@ -58,5 +65,49 @@ describe('isClassLevel', () => {
     for (const bad of ['', 'none', '1ère', 'Terminale', null, undefined, 7]) {
       expect(isClassLevel(bad)).toBe(false);
     }
+  });
+});
+
+describe('cyclesForSchoolName', () => {
+  it('narrows to the one cycle the name announces', () => {
+    expect(cyclesForSchoolName('Collège Georges Brassens')).toEqual(['college']);
+    expect(cyclesForSchoolName('Lycée polyvalent Georges Brassens')).toEqual(['lycee']);
+    expect(cyclesForSchoolName('Ecole élémentaire Arthur Fleury')).toEqual(['elementaire']);
+    expect(cyclesForSchoolName("Ecole primaire privée Jeanne d'Arc")).toEqual(['elementaire']);
+  });
+
+  it('ignores case and accents, like every other match in the app', () => {
+    // Registry names are inconsistent about both: « LYCEE », « Lycée », « Ecole
+    // élémentaire » and « ECOLE ELEMENTAIRE » all appear in the file.
+    expect(cyclesForSchoolName('LYCEE GENERAL ET TECHNOLOGIQUE MONTAIGNE')).toEqual(['lycee']);
+    expect(cyclesForSchoolName('ECOLE ELEMENTAIRE PUBLIQUE')).toEqual(['elementaire']);
+  });
+
+  it('keeps every cycle a name claims, in curriculum order', () => {
+    // « Collège et lycée … » rows exist in the registry, and their pupils really
+    // do span both cycles.
+    expect(cyclesForSchoolName('Collège et lycée Saint-Joseph')).toEqual(['college', 'lycee']);
+    expect(cyclesForSchoolName('Lycée et collège Saint-Joseph')).toEqual(['college', 'lycee']);
+  });
+
+  it('falls back to every cycle when the name settles nothing', () => {
+    // The important half of the rule: this shortens a dropdown, it does not
+    // validate anything, so a name it cannot read must never hide a real class.
+    for (const name of [
+      undefined,
+      null,
+      '',
+      'Groupe scolaire La Meije',
+      'Maison Familiale Rurale de Pont-de-Veyle',
+      "Etablissement régional d'enseignement adapté",
+    ]) {
+      expect(cyclesForSchoolName(name)).toEqual([...CLASS_CYCLES]);
+    }
+  });
+
+  it('only ever returns real cycles', () => {
+    const cycles = cyclesForSchoolName('Cité scolaire');
+
+    expect(cycles.every((c) => CLASS_CYCLES.includes(c))).toBe(true);
   });
 });

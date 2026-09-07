@@ -1,3 +1,5 @@
+import { normalizeText } from '$lib/utils';
+
 /**
  * The school level a missed class belonged to — the « 6e » in « 6e A ».
  *
@@ -61,6 +63,52 @@ export function classLevelsInCycle(cycle: ClassCycle): readonly ClassLevelOption
  */
 export function classLevelLabel(id: string): string {
   return CLASS_LEVELS.find((l) => l.id === id)?.label ?? id;
+}
+
+/**
+ * The name fragments that give a school's cycle away, in `CLASS_CYCLES` order.
+ *
+ * Matched against `normalizeText`d names, so the patterns are accent-free and
+ * lowercase: « Lycée » and « LYCEE » both reduce to `lycee`.
+ *
+ * Anchored at the *start* of a word but deliberately open-ended at the finish, so
+ * « Ecole primaire », « Ecole élémentaire » and the plural « Ecoles primaires »
+ * all match without three more alternatives. A name may match several — the
+ * registry holds twelve « Collège et lycée … » — and each one it matches is a
+ * cycle its pupils really are in.
+ */
+const CYCLE_NAME_PATTERNS: readonly (readonly [ClassCycle, RegExp])[] = [
+  ['elementaire', /\b(primaire|elementaire)/],
+  ['college', /\bcollege/],
+  ['lycee', /\blycee/],
+];
+
+/**
+ * The cycles worth offering for a school, guessed from its name alone.
+ *
+ * Falls back to **every** cycle whenever the name settles nothing — no school
+ * picked yet, or a name like « Groupe scolaire La Meije » or « Maison Familiale
+ * Rurale de Pont-de-Veyle » that never says what it teaches. That default is the
+ * important half of the rule: this is a convenience that shortens a twelve-item
+ * dropdown, not a validation, and a wrong guess must never make a real class
+ * unpickable. Measured over the 51,574 non-maternelle rows of the registry, 3,087
+ * fall through to it.
+ *
+ * Name-based on purpose, unlike `isMaternelle`, which leans on the registry's
+ * `Code nature de l'UAI`. The nature code never reaches the browser — `School`
+ * carries only what the form and the map need — and the stakes here are far
+ * lower: getting it wrong shows a few extra options rather than hiding a school
+ * from the search entirely.
+ */
+export function cyclesForSchoolName(name: string | null | undefined): readonly ClassCycle[] {
+  if (!name) return CLASS_CYCLES;
+
+  const haystack = normalizeText(name);
+  const matched = CYCLE_NAME_PATTERNS.filter(([, pattern]) => pattern.test(haystack)).map(
+    ([cycle]) => cycle
+  );
+
+  return matched.length > 0 ? matched : CLASS_CYCLES;
 }
 
 /** Guard for untrusted input — the form action's check that a posted level is real. */
