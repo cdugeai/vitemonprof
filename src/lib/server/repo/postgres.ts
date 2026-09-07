@@ -26,13 +26,13 @@ export function createPostgresMissedHourRepo(sql: Sql): MissedHourRepo {
   /**
    * `unsafe` is postgres-js's "run this string" escape hatch, and the name is
    * about *provenance*, not about skipping escaping — the values still travel as
-   * bound `$n` parameters, never interpolated. The string comes from Knex, not
-   * from user input, so nothing here is concatenated from a request.
+   * bound `$n` parameters, never interpolated. The string comes from Kysely,
+   * not from user input, so nothing here is concatenated from a request.
    */
   const run = <T extends Record<string, unknown>>(q: {
     sql: string;
-    bindings: readonly unknown[];
-  }) => sql.unsafe<T[]>(q.sql, q.bindings as never[]);
+    parameters: readonly unknown[];
+  }) => sql.unsafe<T[]>(q.sql, q.parameters as never[]);
 
   return {
     async add(mh) {
