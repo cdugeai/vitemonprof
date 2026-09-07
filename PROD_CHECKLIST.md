@@ -252,7 +252,12 @@ come from the registry, not the form.
 
 ## §7 — P2 · Legal (France / RGPD)
 
-- [ ] **Mentions légales page** — legally required for a French public-facing site.
+- [x] **Mentions légales page** — legally required for a French public-facing site.
+      `src/routes/mentions-legales/+page.svelte`, linked from the footer, covered by
+      `e2e/mentions-legales.spec.ts`. Published under LCEN art. 6-III-2 (non-professional
+      individual publisher, identity withheld from the public and held by the host).
+      **`CONTACT_EMAIL` in that file is a placeholder** and must point at a real mailbox
+      before launch — it is the address the page offers for signalements.
 - [ ] **Privacy notice.** The app collects reports naming an identifiable school,
       class, and date. Even without accounts, that plus an IP address (which §3's
       rate limiter will store) is personal data under RGPD. Document what is
