@@ -5,9 +5,10 @@
   import { Label } from '$lib/components/ui/label';
   import MapMain from '$lib/components/MapMain.svelte';
   import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
+  import type { School } from '$lib/types/school';
 
   let selectedClass: string = $state('none');
-  let selectedSchoolId: string | null = $state(null);
+  let selectedSchool: School | null = $state(null);
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -32,7 +33,7 @@
         </Card.Header>
         <Card.Content class="p-0">
           <div class="h-96 rounded-lg bg-gray-100">
-            <MapMain bind:selectedSchoolId />
+            <MapMain bind:selectedSchool />
           </div>
         </Card.Content>
       </Card.Root>
@@ -52,7 +53,7 @@
                 id="school"
                 type="text"
                 placeholder="Select school..."
-                value={selectedSchoolId}
+                value={selectedSchool?.name}
               />
             </div>
 
