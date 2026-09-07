@@ -12,5 +12,7 @@ export async function addMissedHour(mh: MissedHour): Promise<void> {
 
 export async function getMissedHour(): Promise<MissedHour[]> {
   await delay(Math.random() * maxWaitTimeS * 1000);
+  console.log({ mh_from_db: data });
+
   return data;
 }
