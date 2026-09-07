@@ -57,5 +57,8 @@
     "typescript-eslint": "^8.60.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.5.5-r.4"
   }
 }
