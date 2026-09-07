@@ -68,6 +68,7 @@ function report(overrides: Partial<NewMissedHour> = {}): NewMissedHour {
     date_: '2026-08-17',
     nbHours: 2,
     createdAt: daysAgo(1),
+    departement: '76',
     ...overrides,
   };
 }
@@ -306,6 +307,152 @@ describe.each(BACKENDS)('MissedHourRepo contract: $name', ({ create }) => {
       // not the other: SQL `partition by` groups nulls *together*, and the
       // JSON-encoded key has to agree.
       expect((await repo.list()).map((r) => r.corroborations)).toEqual([2, 2]);
+    });
+  });
+
+  /**
+   * The dashboard ranking. Every rule here is one a `group by` and a JS `Map`
+   * can disagree about — ordering, tie-breaks, what a null means, and whether
+   * "no département" means "all of them".
+   */
+  describe('top', () => {
+    const inDept = (departement: string, overrides: Partial<NewMissedHour> = {}) =>
+      report({ departement, ...overrides });
+
+    it('returns nothing at all when there is nothing stored', async () => {
+      const repo = await create();
+
+      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([]);
+    });
+
+    it('ranks schools by total hours, descending', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
+      await repo.add(inDept('75', { schoolId: 'B', nbHours: 4 }));
+      await repo.add(inDept('75', { schoolId: 'C', nbHours: 2 }));
+
+      const top = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+
+      expect(top).toEqual([
+        { key: 'B', totalHours: 4, reportCount: 1 },
+        { key: 'C', totalHours: 2, reportCount: 1 },
+        { key: 'A', totalHours: 1, reportCount: 1 },
+      ]);
+    });
+
+    it('sums hours and counts reports within a group', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 2, date_: '2026-08-17' }));
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 3, date_: '2026-08-18' }));
+
+      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
+        { key: 'A', totalHours: 5, reportCount: 2 },
+      ]);
+    });
+
+    it('ranks by hours rather than by number of reports', async () => {
+      const repo = await create();
+
+      // Three small reports against one large one. Ranking on `reportCount`
+      // would put A first; the site measures lost teaching time, so B wins.
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-17' }));
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-18' }));
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1, date_: '2026-08-19' }));
+      await repo.add(inDept('75', { schoolId: 'B', nbHours: 4 }));
+
+      const [first] = await repo.top({ departement: '75', dimension: 'school', limit: 5 });
+
+      expect(first).toEqual({ key: 'B', totalHours: 4, reportCount: 1 });
+    });
+
+    it('breaks ties on the key, so the order is stable across reloads', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'B', nbHours: 2 }));
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 2 }));
+
+      expect(
+        (await repo.top({ departement: '75', dimension: 'school', limit: 5 })).map((r) => r.key)
+      ).toEqual(['A', 'B']);
+    });
+
+    it('honours the limit', async () => {
+      const repo = await create();
+
+      for (const [schoolId, nbHours] of [
+        ['A', 1],
+        ['B', 2],
+        ['C', 3],
+        ['D', 4],
+      ] as const) {
+        await repo.add(inDept('75', { schoolId, nbHours }));
+      }
+
+      const top = await repo.top({ departement: '75', dimension: 'school', limit: 2 });
+
+      expect(top.map((r) => r.key)).toEqual(['D', 'C']);
+    });
+
+    it('counts only the département asked for', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
+      await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9 }));
+
+      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([
+        { key: 'A', totalHours: 1, reportCount: 1 },
+      ]);
+    });
+
+    it('counts every département when asked for none', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { schoolId: 'A', nbHours: 1 }));
+      await repo.add(inDept('2A', { schoolId: 'B', nbHours: 9 }));
+      // Including rows with no département at all — a national total that
+      // silently dropped them would be wrong, and `departement is null` is
+      // exactly the mistake this catches.
+      await repo.add(report({ departement: null, schoolId: 'C', nbHours: 5 }));
+
+      expect(
+        (await repo.top({ departement: null, dimension: 'school', limit: 5 })).map((r) => r.key)
+      ).toEqual(['B', 'C', 'A']);
+    });
+
+    it('excludes rows with no département from a département-scoped ranking', async () => {
+      const repo = await create();
+
+      await repo.add(report({ departement: null, schoolId: 'A', nbHours: 9 }));
+
+      expect(await repo.top({ departement: '75', dimension: 'school', limit: 5 })).toEqual([]);
+    });
+
+    it('ranks disciplines when asked for that dimension', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { discipline: 'maths', nbHours: 1, schoolId: 'A' }));
+      await repo.add(inDept('75', { discipline: 'sport', nbHours: 6, schoolId: 'B' }));
+
+      expect(await repo.top({ departement: '75', dimension: 'discipline', limit: 5 })).toEqual([
+        { key: 'sport', totalHours: 6, reportCount: 1 },
+        { key: 'maths', totalHours: 1, reportCount: 1 },
+      ]);
+    });
+
+    it('leaves reports that named no discipline out of the discipline ranking', async () => {
+      const repo = await create();
+
+      await repo.add(inDept('75', { discipline: null, nbHours: 99, schoolId: 'A' }));
+      await repo.add(inDept('75', { discipline: 'maths', nbHours: 1, schoolId: 'B' }));
+
+      // A "non précisé" row would top this ranking while naming no subject —
+      // and the discipline is optional on the form, so it would be a common
+      // outcome, not an edge case.
+      expect(await repo.top({ departement: '75', dimension: 'discipline', limit: 5 })).toEqual([
+        { key: 'maths', totalHours: 1, reportCount: 1 },
+      ]);
     });
   });
 });

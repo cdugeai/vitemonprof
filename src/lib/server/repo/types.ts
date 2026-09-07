@@ -1,4 +1,10 @@
-import type { MissedHour, MissedHourStats, NewMissedHour } from '$lib/types/missedHours';
+import type {
+  MissedHour,
+  MissedHourStats,
+  NewMissedHour,
+  TopMissedHours,
+  TopDimension,
+} from '$lib/types/missedHours';
 
 /**
  * The storage port for missed-hour reports.
@@ -48,7 +54,34 @@ export interface MissedHourRepo {
    * point of the interface, not a leak in it.
    */
   stats(): Promise<MissedHourStats>;
+
+  /**
+   * The `limit` schools — or disciplines — with the most missed hours, ranked by
+   * total hours descending.
+   *
+   * `departement: null` means the whole country. Rows whose grouping value is
+   * null are excluded: a "Non précisé" entry would top the discipline ranking on
+   * a young dataset while naming no subject at all, which is noise where the
+   * page's whole job is to name things.
+   *
+   * Ranked by hours rather than by number of reports, because hours is the
+   * quantity the site is about — and because report count is the easier number
+   * to inflate. Ties break on the key so a page reload cannot reshuffle two
+   * equal rows.
+   */
+  top(options: TopQuery): Promise<TopMissedHours[]>;
 }
+
+/** The arguments to `MissedHourRepo.top`. */
+export interface TopQuery {
+  /** Restrict to one département, or `null` for the whole country. */
+  departement: string | null;
+  dimension: TopDimension;
+  limit: number;
+}
+
+/** What the dashboard asks for when nothing says otherwise. */
+export const TOP_LIMIT = 5;
 
 /** Rolling window for the "last 7 days" stat, shared so backends can't disagree. */
 export const STATS_WINDOW_DAYS = 7;
