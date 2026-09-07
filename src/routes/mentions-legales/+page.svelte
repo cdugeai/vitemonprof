@@ -134,7 +134,7 @@
       <section>
         <h2 class="mb-4 text-2xl font-bold">Signalement d'un contenu</h2>
         <p class="text-gray-700">
-          Les signalements publiés sur ViteMonProf sont déposés par les visiteurs. Tout contenu
+          Les soumissions publiées sur ViteMonProf sont déposées par les visiteurs. Tout contenu
           estimé inexact, diffamatoire ou portant atteinte aux droits d'un tiers peut être signalé à
           <a class="text-primary font-medium underline" href="mailto:{CONTACT_EMAIL}"
             >{CONTACT_EMAIL}</a

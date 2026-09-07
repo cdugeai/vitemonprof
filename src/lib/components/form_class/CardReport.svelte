@@ -101,7 +101,7 @@
         </span>
 
         <div class="flex flex-col">
-          <Card.Title>Signaler une heure non remplacée</Card.Title>
+          <Card.Title>Soumettre une heure non remplacée</Card.Title>
           <Card.Description>
             Renseignez ici un cours qui n'a pas eu lieu <b>et</b> n'a pas été remplacé.
           </Card.Description>
@@ -153,7 +153,7 @@
 
       <Button type="submit" class="mb-3 w-full rounded-xl p-5" disabled={!canSubmit || submitting}>
         <Send />
-        <span>{submitting ? 'Envoi en cours…' : 'Envoyer le signalement'}</span>
+        <span>{submitting ? 'Envoi en cours…' : 'Envoyer la soumission'}</span>
       </Button>
     </Card.Content>
   </Card.Root>

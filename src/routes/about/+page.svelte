@@ -6,7 +6,7 @@
 
 <Seo
   title="À propos"
-  description="Ce que compte ViteMonProf, comment les signalements sont dédoublonnés et corroborés, et ce que deviennent les données de l'observatoire."
+  description="Ce que compte ViteMonProf, comment les soumissions sont dédoublonnées et corroborées, et ce que deviennent les données de l'observatoire."
 />
 
 <div class="mx-auto max-w-4xl px-4 py-12">
@@ -17,12 +17,12 @@
       <section>
         <h2 class="mb-4 text-2xl font-bold">Ce que l'observatoire compte</h2>
         <p class="text-gray-700">
-          Une unité : l'heure de cours non remplacée. Chaque signalement précise l'établissement, la
+          Une unité : l'heure de cours non remplacée. Chaque soumission précise l'établissement, la
           classe, la date et le nombre d'heures ; la matière et le groupe sont facultatifs.
         </p>
         <p class="mt-3 text-gray-700">
-          De ces signalements se déduisent des totaux par établissement, par matière, par
-          département et pour la France entière.
+          De ces soumissions se déduisent des totaux par établissement, par matière, par département
+          et pour la France entière.
         </p>
       </section>
 
@@ -67,7 +67,7 @@
         </p>
         <p class="mt-3 text-gray-700">
           ViteMonProf est un <strong>observatoire participatif</strong>. Il rassemble des
-          signalements volontaires pour construire, ensemble, une vue nationale sur ces heures
+          soumissions volontaires pour construire, ensemble, une vue nationale sur ces heures
           d'enseignement non assurées.
         </p>
       </section>
@@ -95,13 +95,13 @@
         <ol class="list-inside list-decimal space-y-2 text-gray-700">
           <li>Choisissez l'établissement, dans la liste ou sur la carte.</li>
           <li>Indiquez la classe, la date et le nombre d'heures concernées.</li>
-          <li>La matière et le groupe sont facultatifs — signalez même sans eux.</li>
+          <li>La matière et le groupe sont facultatifs — soumettez même sans eux.</li>
           <li>Envoyez. C'est anonyme et cela prend deux minutes.</li>
         </ol>
         <p class="mt-3 text-gray-700">
-          Plusieurs personnes peuvent signaler la même heure : c'est utile. Les signalements
-          concordants sont regroupés et comptés <strong>une seule fois</strong> dans les totaux, et leur
-          nombre indique la fiabilité de l'information.
+          Plusieurs personnes peuvent soumettre la même heure : c'est utile. Les soumissions
+          concordantes sont regroupées et comptées <strong>une seule fois</strong> dans les totaux, et
+          leur nombre indique la fiabilité de l'information.
         </p>
       </section>
 
@@ -110,7 +110,7 @@
         <p class="text-gray-700">
           Les données viennent de contributions volontaires : elles ne sont ni exhaustives, ni
           représentatives, et un territoire très actif apparaîtra plus touché qu'un territoire
-          silencieux. Ces chiffres décrivent ce qui est signalé, pas la réalité complète du
+          silencieux. Ces chiffres décrivent ce qui est soumis, pas la réalité complète du
           remplacement en France. Nous préférons le dire clairement.
         </p>
         <Button href="/mentions-legales" variant="outline" class="mt-4">Mentions légales</Button>

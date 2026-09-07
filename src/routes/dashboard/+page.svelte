@@ -101,14 +101,14 @@
 
 <Seo
   title="Tableau de bord"
-  description="Les heures de cours non remplacées les plus signalées, département par département. Chaque créneau est compté une seule fois."
+  description="Les heures de cours non remplacées les plus souvent soumises, département par département. Chaque créneau est compté une seule fois."
 />
 
 <div class="mx-auto max-w-4xl px-4 py-8">
   <h1 class="mb-2 text-3xl font-bold">Tableau de bord</h1>
   <p class="text-muted-foreground mb-8">
-    Les heures non remplacées les plus signalées, par département. Chaque créneau est compté une
-    seule fois, quel que soit le nombre de contributeurs.
+    Les heures non remplacées les plus souvent soumises, par département. Chaque créneau est compté
+    une seule fois, quel que soit le nombre de contributeurs.
   </p>
 
   <div class="mb-6 grid gap-4 sm:grid-cols-2">
@@ -204,11 +204,11 @@
             <span class="bg-muted text-muted-foreground rounded-full p-3">
               <ChartNoAxesColumn class="size-5" />
             </span>
-            <p class="text-sm font-medium">Aucun signalement ici pour le moment</p>
+            <p class="text-sm font-medium">Aucune soumission ici pour le moment</p>
             <p class="text-muted-foreground text-sm">
               {data.departement
-                ? 'Aucune heure non remplacée n’a encore été signalée dans ce département.'
-                : 'Aucune heure non remplacée n’a encore été signalée.'}
+                ? 'Aucune heure non remplacée n’a encore été soumise dans ce département.'
+                : 'Aucune heure non remplacée n’a encore été soumise.'}
             </p>
           </div>
         {:else}
@@ -258,17 +258,17 @@
 
                     Always both, with no condition. This line is the only place
                     corroboration appears on the dashboard — there is no
-                    « Signalé N fois » badge here — so a number that comes and
+                    « Soumis N fois » badge here — so a number that comes and
                     goes would make its absence ambiguous. Shown every time, the
                     pair reads as a ratio the eye can compare down the column:
-                    « 3 créneaux · 3 signalements » is three lone reports, and
-                    « 3 créneaux · 12 signalements » is the same three hours with
+                    « 3 créneaux · 3 soumissions » is three lone reports, and
+                    « 3 créneaux · 12 soumissions » is the same three hours with
                     real weight behind them.
                   -->
                   <p class="text-muted-foreground mt-1 text-xs">
                     {entry.events} créneau{entry.events > 1 ? 'x' : ''}
                     <span aria-hidden="true">·</span>
-                    {entry.submissions} signalement{entry.submissions > 1 ? 's' : ''}
+                    {entry.submissions} soumission{entry.submissions > 1 ? 's' : ''}
                   </p>
                 </div>
               </li>

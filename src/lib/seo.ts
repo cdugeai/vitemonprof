@@ -17,7 +17,7 @@ export const SITE_NAME = 'ViteMonProf';
  * thing nobody notices until it has been shared.
  */
 export const SITE_DESCRIPTION =
-  'ViteMonProf recense les heures de cours non remplacées signalées par les familles, ' +
+  'ViteMonProf recense les heures de cours non remplacées soumises par les familles, ' +
   'élèves et personnels, dans votre établissement et partout en France.';
 
 /**
@@ -37,5 +37,5 @@ export const OG_IMAGE = {
   path: '/og-image.jpg',
   width: 1200,
   height: 630,
-  alt: "Page d'accueil de ViteMonProf : le formulaire de signalement d'une heure non remplacée.",
+  alt: "Page d'accueil de ViteMonProf : le formulaire de soumission d'une heure non remplacée.",
 } as const;

@@ -64,8 +64,8 @@ test('a missed hour reported by several people is badged with the count', async 
   const rows = page.getByRole('listitem').filter({ hasText: '0limagined0' });
 
   await expect(rows).toHaveCount(2);
-  await expect(rows.first()).toContainText('Signalé 2 fois');
-  await expect(rows.last()).toContainText('Signalé 2 fois');
+  await expect(rows.first()).toContainText('Soumis 2 fois');
+  await expect(rows.last()).toContainText('Soumis 2 fois');
 });
 
 test('a lone report carries no corroboration badge', async ({ page }) => {
@@ -83,7 +83,7 @@ test('a lone report carries no corroboration badge', async ({ page }) => {
   const row = page.getByRole('listitem').filter({ hasText: '0lonely00' });
 
   await expect(row).toBeVisible();
-  // "Signalé 1 fois" on every uncorroborated row would be noise; absence is the
+  // "Soumis 1 fois" on every uncorroborated row would be noise; absence is the
   // design, so absence is what gets asserted.
-  await expect(row).not.toContainText('Signalé');
+  await expect(row).not.toContainText('Soumis');
 });

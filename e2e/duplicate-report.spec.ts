@@ -26,8 +26,8 @@ async function submitReport(page: Page, fields: ReportFields) {
       status: res.status,
       // The status says accepted or refused, and `submission-status.spec.ts`
       // pins it; which of the two guards refused is only in the message.
-      isDuplicate: text.includes('Vous avez déjà effectué ce signalement.'),
-      isRateLimited: text.includes('Trop de signalements'),
+      isDuplicate: text.includes('Vous avez déjà effectué cette soumission.'),
+      isRateLimited: text.includes('Trop de soumissions'),
     };
   }, fields);
 }

@@ -65,14 +65,14 @@ test('the dashboard ranks schools and disciplines within a département', async 
   await expect(rows.first()).toContainText(NICOLI.name);
   await expect(rows.first()).toContainText('4');
   // One report, and the singular is rendered — the count is shown on every row,
-  // so `1 signalements` would be on screen constantly if the plural were fixed.
-  await expect(rows.first()).toContainText('1 créneau · 1 signalement');
+  // so `1 soumissions` would be on screen constantly if the plural were fixed.
+  await expect(rows.first()).toContainText('1 créneau · 1 soumission');
   await expect(rows.nth(1)).toContainText(FERRACCI.name);
   await expect(rows.nth(1)).toContainText('3');
   // Two genuinely different hours at that school, from two lone reports. Both
   // numbers are asserted even though they are equal: the pair is shown on every
   // row, so that it reads as a ratio rather than as an occasional annotation.
-  await expect(rows.nth(1)).toContainText('2 créneaux · 2 signalements');
+  await expect(rows.nth(1)).toContainText('2 créneaux · 2 soumissions');
 
   // Same data, grouped the other way: maths 3h from two reports beats sport 4h?
   // No — sport wins on hours, which is the point of ranking by hours.
@@ -88,7 +88,7 @@ test('a département with no reports says so instead of rendering an empty list'
   // 976 is Mayotte, which nothing in the suite reports in.
   await page.goto('/dashboard?departement=976');
 
-  await expect(page.getByText('Aucun signalement ici pour le moment')).toBeVisible();
+  await expect(page.getByText('Aucune soumission ici pour le moment')).toBeVisible();
 });
 
 test('the département filter lives in the URL, so the view is linkable', async ({ page }) => {

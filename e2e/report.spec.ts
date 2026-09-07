@@ -76,7 +76,7 @@ test('a parent can report a missed class and see it appear in the recent list', 
 
   await page.getByRole('radio', { name: '3 heures' }).click();
 
-  const submit = page.getByRole('button', { name: /Envoyer le signalement/ });
+  const submit = page.getByRole('button', { name: /Envoyer la soumission/ });
   await expect(submit).toBeEnabled();
   await submit.click();
 
@@ -133,7 +133,7 @@ test('a rejection is a toast, and the next report still goes through', async ({ 
   await page.locator('[data-today]').first().click();
   await page.getByRole('radio', { name: '4 heures' }).click();
 
-  const submit = page.getByRole('button', { name: /Envoyer le signalement/ });
+  const submit = page.getByRole('button', { name: /Envoyer la soumission/ });
   await submit.click();
   await expect(page.getByLabel(/Notifications/).getByText("Merci, c'est enregistré")).toBeVisible();
 
@@ -142,9 +142,9 @@ test('a rejection is a toast, and the next report still goes through', async ({ 
   await submit.click();
   const errorToast = page
     .getByLabel(/Notifications/)
-    .getByText("Le signalement n'a pas pu être envoyé");
+    .getByText("La soumission n'a pas pu être envoyée");
   await expect(errorToast).toBeVisible();
-  await expect(page.getByText('Vous avez déjà effectué ce signalement.')).toBeVisible();
+  await expect(page.getByText('Vous avez déjà effectué cette soumission.')).toBeVisible();
 
   // The failure is a toast and *only* a toast: `update()` is skipped precisely so the
   // page's own alert — the no-JS fallback — doesn't say it a second time.
@@ -205,7 +205,7 @@ test('future dates are rejected', async ({ page }) => {
     }
   });
 
-  const submit = page.getByRole('button', { name: /Envoyer le signalement/ });
+  const submit = page.getByRole('button', { name: /Envoyer la soumission/ });
   await submit.click();
 
   // Should show an error about date bounds
