@@ -17,6 +17,8 @@
   import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2';
 
   let { children } = $props();
+
+  const CONTACT_EMAIL = 'contact@vitemonprof.fr';
 </script>
 
 <svelte:head>
@@ -38,11 +40,23 @@
   </main>
   <footer class="bg-gray-800 py-8 text-white">
     <div class="mx-auto max-w-7xl space-y-3 px-4 text-center">
-      <p>&copy; 2026 ViteMonProf — observatoire participatif des heures de cours non remplacées.</p>
       <nav class="text-sm text-gray-300">
         <a class="hover:text-white hover:underline" href={resolve('/mentions-legales')}>
           Mentions légales
         </a>
+        <span>·</span>
+        <a class="hover:text-white hover:underline" href={'mailto:' + CONTACT_EMAIL}>
+          Nous écrire
+        </a>
+        <span>·</span>
+        <a
+          class="hover:text-white hover:underline"
+          target="_blank"
+          href="https://www.data.gouv.fr/datasets/vitemonprof-soumissions"
+        >
+          Télécharger les données
+        </a>
+        <p>&copy; 2026 ViteMonProf</p>
       </nav>
     </div>
   </footer>
