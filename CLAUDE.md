@@ -154,6 +154,50 @@ Use examples on https://svelte-maplibre-gl.mierune.dev/examples to help get good
 and Playwright (whose `webServer` is `npm run dev`) all just work on a fresh
 clone.
 
+## The CSV exports cover yesterday
+
+`npm run db:export:hours` and `npm run db:export:events` each dump **one day** —
+the day before the run — and name the file after it: run on the 15th, you get
+`exports/missed-hour-20260914.csv`. They are a daily job, so each file is the
+slice that appeared since the last one; the files concatenate into the table
+rather than each restating it.
+
+**`-- --day 2026-09-06` exports a named day instead** — for backfilling a run
+that was missed, or for checking one. The day is a _flag_ because the optional
+output path was already a bare argument, and confusing the two fails silently:
+`-- exports/missed-hour-20260906.csv` renames the file without moving the
+window, handing you the 5th's rows under the 6th's name.
+
+The day is **UTC**, for the reason `MAX_FUTURE_DAYS` in `$lib/reportDate` gives:
+French territory spans UTC-10 to UTC+12, so no local midnight is local for
+everyone the site covers — and a UTC boundary makes a scheduled runner and a
+laptop in Paris produce the same file. Running at 00:30 Paris time therefore
+exports the day _before_ yesterday, which is what "UTC" in the script's own log
+line is there to say.
+
+Both bounds come from one call to `previousDay()` in `$lib/server/exportDay`, and
+that is the point of the module: the rows the query selects and the date the
+filename claims cannot drift apart, which a `current_date - 1` in SQL plus a
+`new Date()` in JS could do every night. The window is half-open
+(`>= start`, `< end`) so a report written at exactly midnight lands in one file,
+not two.
+
+`scripts/lib/exportCsv.ts` holds everything the two scripts share; they differ
+only in the relation and its creation column — `created_at` for `missed_hour`,
+`first_reported_at` for the `missed_hour_event` view. An empty day is ordinary
+now (a Sunday, a holiday), so the header comes from the driver's row description
+rather than the first row: the file is always written, header-only if need be,
+because a downstream job that runs every morning should not have to tell "no
+reports" apart from "the export broke". An empty run says which column decided
+(`no missed_hour rows with created_at on 2026-09-05`), since "wrong day" and
+"wrong column" produce the same empty file.
+
+Both filter on when the row was **submitted**, not on `date`, the day of the
+class it describes — a report filed on the 6th about a class missed on the 2nd
+belongs in the 6th's file. That is what puts every row in exactly one day's
+export; grouping by `date` instead would move rows between already-published
+files every time someone reports an older class.
+
 ## Migrations
 
 Schema changes are versioned Kysely migrations in `migrations/`, applied by a
