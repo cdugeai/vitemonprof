@@ -15,7 +15,6 @@
   import SelectorDepartement from './SelectorDepartement.svelte';
   import SelectorSchool from './SelectorSchool.svelte';
   import DatePicker from '../DatePicker.svelte';
-  import MapMain from '../MapMain.svelte';
   import PresenterSchool from './PresenterSchool.svelte';
   import type { School } from '$lib/types/school';
   import FormHint from './FormHint.svelte';
@@ -39,6 +38,28 @@
     nbHours = $bindable(),
     canSubmit = $bindable(),
   }: Props = $props();
+
+  /**
+   * MapLibre is ~1 MB of JavaScript — several times the weight of everything else on
+   * this page combined. A static `import` would put it in the page's initial chunk, and
+   * since the page can't hydrate until that chunk has downloaded, parsed and executed,
+   * every control here would sit dead for seconds on a mid-range phone. So it is loaded
+   * on demand instead, and only lands on the wire when someone asks for the map.
+   *
+   * The `{#if}` is load-bearing for a second reason: bits-ui's `Tabs.Content` does *not*
+   * unmount inactive panels, it renders them with `hidden`. Without this guard `MapMain`
+   * would mount on page load — booting a WebGL context and fetching basemap tiles into a
+   * zero-size hidden box — even for visitors who never leave the "Liste" tab.
+   *
+   * `$state.raw` because the value is a Promise: we want reactivity when it is *replaced*,
+   * not a deep proxy wrapped around it. `??=` keeps it to a single import — re-selecting
+   * the tab reuses the resolved module rather than starting over.
+   */
+  let mapModule = $state.raw<Promise<typeof import('../MapMain.svelte')> | undefined>();
+
+  function onTabChange(value: string) {
+    if (value === 'o_map') mapModule ??= import('../MapMain.svelte');
+  }
 </script>
 
 <div class="space-y-4">
@@ -61,7 +82,7 @@
       </div>
     </Card.Header>
     <Card.Content class=" -mb-(--card-spacing)">
-      <Tabs.Root value="o_list" class="mb-4 sm:col-span-2 ">
+      <Tabs.Root value="o_list" onValueChange={onTabChange} class="mb-4 sm:col-span-2 ">
         <Tabs.List class="bg-mybeigestrong-bg w-full">
           <Tabs.Trigger value="o_list">
             <List />
@@ -80,7 +101,19 @@
         </Tabs.Content>
         <Tabs.Content value="o_map">
           <div class="h-75 overflow-hidden rounded-xl border bg-gray-100">
-            <MapMain bind:selectedSchool />
+            {#if mapModule}
+              {#await mapModule}
+                <div class="text-muted-foreground grid h-full place-items-center text-sm">
+                  Chargement de la carte…
+                </div>
+              {:then { default: MapMain }}
+                <MapMain bind:selectedSchool />
+              {:catch}
+                <div class="text-muted-foreground grid h-full place-items-center p-4 text-sm">
+                  La carte n'a pas pu être chargée. Utilisez l'onglet « Liste ».
+                </div>
+              {/await}
+            {/if}
           </div>
           <PresenterSchool school={selectedSchool} />
         </Tabs.Content>
