@@ -1,7 +1,11 @@
 <script lang="ts">
   import * as Select from '$lib/components/ui/select/index.js';
 
-  let selectedClass = $state<string | undefined>('none');
+  let {
+    selectedClass = $bindable('none'),
+  }: {
+    selectedClass: string;
+  } = $props();
 
   const classOptions = [
     { value: 'cp', label: 'CP' },
