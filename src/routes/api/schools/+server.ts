@@ -1,17 +1,12 @@
 import { error } from '@sveltejs/kit';
-import { getSchools, getSchoolsFilterName, getSchoolsInfo } from '$lib/server/data';
+import { MAX_SEARCH_RESULTS } from '$lib/schoolSearch';
+import { getSchools, getSchoolsInfo, searchSchools } from '$lib/server/data';
 import { gzipJson, gzipJsonResponse } from '$lib/server/gzip-json';
 import type { School } from '$lib/types/school';
 import type { RequestHandler } from './$types';
 
 /** Upper bound on `?id=` filters, so a crafted URL can't force an oversized response. */
 const MAX_IDS = 50;
-
-/**
- * Upper bound on search hits. A one-letter query matches most of the dataset, and the
- * caller is a typeahead that only ever shows a handful — so cap it server-side.
- */
-const MAX_SEARCH_RESULTS = 10;
 
 /**
  * Coordinate precision on the wire. A fifth decimal of latitude is ~1.1 m — finer than
@@ -63,7 +58,8 @@ function allSchoolsGzip(): Uint8Array<ArrayBuffer> {
 /**
  * GET /api/schools                 -> every school
  * GET /api/schools?id=a&id=b       -> just those schools (unknown ids are skipped)
- * GET /api/schools?query_string=x  -> schools whose name or postal code contains `x`
+ * GET /api/schools?query_string=x  -> schools matching every word of `x` (see
+ *                                     `$lib/schoolSearch` for what a word matches)
  *
  * `id` takes precedence over `query_string` if both are supplied.
  *
@@ -87,7 +83,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
   if (queryString) {
     return gzipJsonResponse(
-      gzipJson(withRoundedCoords(getSchoolsFilterName(queryString).slice(0, MAX_SEARCH_RESULTS)))
+      gzipJson(withRoundedCoords(searchSchools(queryString).slice(0, MAX_SEARCH_RESULTS)))
     );
   }
 

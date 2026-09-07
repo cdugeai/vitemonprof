@@ -6,6 +6,7 @@
   import { buildLabelSchool } from '$lib/utils';
   import { createSelectSearchFocus } from './searchableSelect';
   import { fetchGzipJson } from '$lib/gzip-json';
+  import { MAX_SEARCH_RESULTS } from '$lib/schoolSearch';
 
   let {
     // eslint-disable-next-line no-useless-assignment
@@ -23,6 +24,12 @@
   let typedText = $state('');
   let schools: School[] = $state([]);
   let isLoading = $state(false);
+
+  // The endpoint truncates at `MAX_SEARCH_RESULTS` and says nothing about it, so a full
+  // page is the only signal that results were dropped. It over-reports by one query in
+  // however many land on exactly ten hits — the cost of being wrong that way is a hint
+  // that was not needed, against silently hiding the school someone is looking for.
+  const isTruncated = $derived(schools.length === MAX_SEARCH_RESULTS);
 
   const schoolOptions = $derived(
     schools.map((s) => ({
@@ -104,7 +111,12 @@
   <Select.Content class="max-h-65 ">
     <Select.Group>
       <Select.Label>Établissement</Select.Label>
-      <Input bind:value={typedText} class="my-1" placeholder="Rechercher" {@attach search.field} />
+      <Input
+        bind:value={typedText}
+        class="my-1"
+        placeholder="Nom, ville ou code postal"
+        {@attach search.field}
+      />
       {#each schoolOptions as school_ (school_.value)}
         <Select.Item value={school_.value} label={school_.label}>
           {school_.label}
@@ -120,6 +132,11 @@
           {/if}
         </p>
       {/each}
+      {#if isTruncated}
+        <p class="text-muted-foreground px-2 py-2 text-xs">
+          Trop de résultats : ajoutez un code postal, par exemple « 63 ».
+        </p>
+      {/if}
     </Select.Group>
   </Select.Content>
 </Select.Root>

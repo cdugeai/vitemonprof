@@ -78,6 +78,32 @@ Split into two modules so the client chunk only tree-shakes in pako's inflate ha
 pako 3 renamed the decode option: it is `{ toText: true }`, and the old
 `{ to: 'string' }` is now ignored silently (you get a `Uint8Array` back).
 
+## Every word of a school search has to match
+
+`$lib/schoolSearch` splits the query on whitespace and keeps only schools that
+match **every** token, where a token matches when the name or city contains it
+_or_ the postal code starts with it. That is what makes « blaise pascal 63 »
+narrower than « blaise pascal »: with the OR the search used to be, adding a
+postal code widened the result set, which is the opposite of what someone typing
+one wants.
+
+There is no attempt to classify a token as "a postal code" or "a name". Letters
+never start a French postal code, so a word only ever matches the text; and the
+registry really does contain « Ecole élémentaire RPI 75 » in the Pas-de-Calais,
+so a number has to be allowed to match a name too. The disjunction inside a token
+covers both without a rule that could get the classification wrong.
+
+`MAX_SEARCH_RESULTS` lives in that module rather than in the endpoint because
+both ends need it — the API truncates to it, and `SelectorSchool.svelte` compares
+against it to decide whether to show "add a postal code". A full page is the only
+signal the endpoint gives that anything was dropped.
+
+The module holds no data, which is the point: `$lib/server/data.ts` imports the
+27 MB CSV with `?raw`, so nothing importing _it_ is cheap to unit-test.
+`data.ts` keeps only the memoized index — normalizing 64k names per keystroke is
+the one thing worth caching — and `schoolSearch.spec.ts` pins the rules against a
+handful of fixtures.
+
 ## What a submission answers
 
 `POST /` returns a status that says what happened to the report, and it takes a
