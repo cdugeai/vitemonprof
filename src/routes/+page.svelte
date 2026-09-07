@@ -70,27 +70,26 @@
   </section>
 
   <!-- Main Content Grid -->
-  <!--
-    `use:enhance` intercepts the submit and sends it with fetch instead of navigating, so
-    no POST ever lands in the browser's history. The server's 303 is still what makes a
-    hard refresh safe for anyone without JS — the two fixes cover different paths.
-    `update()` applies the result: for a redirect it navigates and re-runs `load`, which
-    is what refreshes the stats and the "rapports récents" list below.
-  -->
-  <form
-    method="POST"
-    class="grid grid-cols-1 gap-8 lg:grid-cols-3"
-    use:enhance={() => {
-      submitting = true;
-      showSuccess = false; // a new attempt retires the previous confirmation
-      return async ({ update }) => {
-        await update();
-        submitting = false;
-      };
-    }}
-  >
-    <!-- Map Section (Left - 2 cols) -->
-    <section class="lg:col-span-2">
+  <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+    <!-- Form Section (Left) -->
+    <!--
+      `use:enhance` intercepts the submit and sends it with fetch instead of navigating, so
+      no POST ever lands in the browser's history. The server's 303 is still what makes a
+      hard refresh safe for anyone without JS — the two fixes cover different paths.
+      `update()` applies the result: for a redirect it navigates and re-runs `load`, which
+      is what refreshes the stats and the "rapports récents" list below.
+    -->
+    <form
+      method="POST"
+      use:enhance={() => {
+        submitting = true;
+        showSuccess = false; // a new attempt retires the previous confirmation
+        return async ({ update }) => {
+          await update();
+          submitting = false;
+        };
+      }}
+    >
       <CardReport
         bind:selectedDept
         bind:selectedClass
@@ -130,34 +129,34 @@
       <input type="hidden" name="schoolId" value={selectedSchool?.id} />
       <input type="hidden" name="school_name" value={selectedSchool?.name} />
       <input type="hidden" name="date" value={dateToStr(selectedDate)} />
-    </section>
-  </form>
+    </form>
 
-  <!-- Statistics Preview Section -->
-  <section class="mt-12">
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Aperçu des statistiques</Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <!--
-          Awaited in the template rather than in `onMount`: `data.missed_hours_stats` is a
-          streamed promise, and a new one arrives every time `load` re-runs. An `onMount`
-          only ever reads the first one, so the numbers would go stale after a submit.
-        -->
-        {#await data.missed_hours_stats}
-          {@render stats('-', '-', '-', '-')}
-        {:then s}
-          {@render stats(
-            s.total_hours.toString(),
-            s.total_hours_last_7d.toString(),
-            s.schools_affected.toString(),
-            s.classes_affected.toString()
-          )}
-        {/await}
-      </Card.Content>
-    </Card.Root>
-  </section>
+    <!-- Statistics Preview Section (Right) -->
+    <section>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>Aperçu des statistiques</Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <!--
+            Awaited in the template rather than in `onMount`: `data.missed_hours_stats` is a
+            streamed promise, and a new one arrives every time `load` re-runs. An `onMount`
+            only ever reads the first one, so the numbers would go stale after a submit.
+          -->
+          {#await data.missed_hours_stats}
+            {@render stats('-', '-', '-', '-')}
+          {:then s}
+            {@render stats(
+              s.total_hours.toString(),
+              s.total_hours_last_7d.toString(),
+              s.schools_affected.toString(),
+              s.classes_affected.toString()
+            )}
+          {/await}
+        </Card.Content>
+      </Card.Root>
+    </section>
+  </div>
 
   <!-- Recent reports-->
   <section class="mt-12">
