@@ -111,12 +111,21 @@ test('a rejection is a toast, and the next report still goes through', async ({ 
   // report matches that school, and the rows this test files would break it on any run
   // that reuses a still-running dev server — `reuseExistingServer` keeps the in-memory
   // store alive between local runs.
+  //
+  // « lycée » is in the query, not decoration: the class dropdown offers only the cycles
+  // `cyclesForSchoolName` reads out of the picked school's *name*, so a query that leaves
+  // the cycle open leaves the class options open too. « Jean Moulin » alone matches 581
+  // rows of every cycle, and which one the endpoint returns first is whatever order the
+  // registry happens to be in — that is how this test came to click « 2nde » on an école
+  // primaire when the dataset was next refreshed. Every token has to match, so naming the
+  // cycle pins it: whatever comes back first, its name says « lycée », and 2nde is on
+  // offer.
   await pickFromSearchableSelect(
     page,
     'Établissement',
     'Nom, ville ou code postal',
-    'Jean Moulin',
-    /Jean Moulin/
+    'lycée jean moulin',
+    /Lycée.*Jean Moulin/
   );
   await page.getByRole('button', { name: 'Classe' }).click();
   await page.getByRole('option', { name: '2nde', exact: true }).click();
