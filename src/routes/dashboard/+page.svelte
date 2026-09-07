@@ -18,16 +18,16 @@
       </Card.Content>
     </Card.Root>
 
-    <!-- Top Professors -->
+    <!-- Top Classes -->
     <Card.Root>
       <Card.Header>
-        <Card.Title>Most Reported Professors</Card.Title>
+        <Card.Title>Classes with Most Missed Hours</Card.Title>
       </Card.Header>
       <Card.Content>
         <div class="space-y-3">
           <div class="flex items-center justify-between border-b pb-2">
             <span>Loading...</span>
-            <span class="text-gray-500">0 reports</span>
+            <span class="text-gray-500">0 hours</span>
           </div>
         </div>
       </Card.Content>
