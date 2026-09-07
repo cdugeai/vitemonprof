@@ -4,6 +4,9 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import MapMain from '$lib/components/MapMain.svelte';
+  import SelectorClass from '$lib/components/form_class/SelectorClass.svelte';
+
+  let selectedClass = undefined;
 </script>
 
 <div class="mx-auto max-w-7xl px-4 py-8">
@@ -54,7 +57,7 @@
 
             <div class="space-y-2">
               <Label for="class">Class</Label>
-              <Input id="class" type="text" placeholder="Class name..." />
+              <SelectorClass />
             </div>
 
             <div class="space-y-2">
