@@ -60,6 +60,11 @@
   });
 
   const diffMinutes = (ts: string) => (Date.now() - new Date(ts).getTime()) / 1000 / 60;
+
+  // « 6e A » when a group was given, plain « 6e » when it was not — the group is
+  // optional, so the label has to read naturally either way.
+  const classLabel = (mh: MissedHour) =>
+    mh.classGroup ? `${mh.class} ${mh.classGroup}` : mh.class;
 </script>
 
 <!-- Recent Reports -->
@@ -79,7 +84,7 @@
           <div class="flex gap-2">
             <p>{Math.trunc(diffMinutes(mh.createdAt))} min -</p>
             <p>{school_info?.name} ({school_info?.postalCode}) -</p>
-            <p>{mh.nbHours} heure(s) dans {mh.class}</p>
+            <p>{mh.nbHours} heure(s) dans {classLabel(mh)}</p>
           </div>
         {/each}
       {/if}

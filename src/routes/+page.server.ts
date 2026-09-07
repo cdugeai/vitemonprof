@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { missedHourRepo } from '$lib/server/repo';
+import { isClassGroup } from '$lib/classGroups';
 import { randomUUID } from 'crypto';
 
 /**
@@ -37,6 +38,7 @@ export const actions = {
 
     const schoolId = formData.get('schoolId');
     const className = formData.get('class');
+    const classGroup = formData.get('classGroup');
     const date = formData.get('date');
     const nbHours = formData.get('nbHours');
 
@@ -47,6 +49,10 @@ export const actions = {
 
     if (!className || className === 'none') {
       return fail(400, { error: 'Class is required' });
+    }
+
+    if (classGroup && !isClassGroup(String(classGroup))) {
+      return fail(400, { error: 'Class group must be one of A-G (or 1-7)' });
     }
 
     if (!date) {
@@ -68,6 +74,9 @@ export const actions = {
       uuid: randomUUID(),
       schoolId: String(schoolId),
       class: String(className),
+      // The empty string is what a form sends for "nothing chosen"; the store only
+      // speaks `null`, so the collapse happens here at the boundary.
+      classGroup: isClassGroup(classGroup) ? classGroup : null,
       date_: String(date),
       nbHours: hoursNum,
       createdAt: new Date().toISOString(),

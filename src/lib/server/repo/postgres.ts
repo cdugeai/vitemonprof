@@ -1,5 +1,6 @@
 import { desc, sql } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { isClassGroup } from '$lib/classGroups';
 import type { MissedHourStats } from '$lib/types/missedHours';
 import * as schema from '$lib/server/db/schema';
 import { missedHour } from '$lib/server/db/schema';
@@ -30,6 +31,7 @@ export function createPostgresMissedHourRepo(db: Db): MissedHourRepo {
         uuid: mh.uuid,
         schoolId: mh.schoolId,
         class: mh.class,
+        classGroup: mh.classGroup,
         date_: mh.date_,
         nbHours: mh.nbHours,
         // The domain speaks ISO-8601 strings; the driver wants a `Date`. Converting
@@ -48,6 +50,11 @@ export function createPostgresMissedHourRepo(db: Db): MissedHourRepo {
         uuid: r.uuid,
         schoolId: r.schoolId,
         class: r.class,
+        // Validated on the way out, not cast. `class_group` is a plain `text`
+        // column, so the database will happily hand back anything an older row or
+        // a manual `update` put there; the guard keeps the domain type honest
+        // rather than trusting Drizzle's compile-time view of the schema.
+        classGroup: isClassGroup(r.classGroup) ? r.classGroup : null,
         date_: r.date_,
         nbHours: r.nbHours,
         createdAt: r.createdAt.toISOString(),

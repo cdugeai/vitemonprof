@@ -28,6 +28,8 @@ export const missedHour = pgTable(
     uuid: uuid('uuid').primaryKey(),
     schoolId: text('school_id').notNull(),
     class: text('class').notNull(),
+    // Nullable: the group is optional in the form
+    classGroup: text('class_group'),
     date_: date('date').notNull(),
     nbHours: integer('nb_hours').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
