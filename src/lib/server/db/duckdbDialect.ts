@@ -42,12 +42,21 @@ import {
 
 /**
  * Kysely takes a lock so two deploys cannot migrate at once. `PostgresAdapter`
- * does that with `pg_advisory_xact_lock`, which DuckDB does not have.
+ * does that with `pg_advisory_xact_lock`, which DuckDB does not have — and
+ * MotherDuck does not add one.
  *
- * A no-op is the honest implementation rather than a shortcut: in file mode
- * DuckDB permits exactly one writing process, enforced by an OS-level lock on the
- * file itself. The concurrency this lock exists to prevent cannot occur — a
- * second migrator cannot even open the database.
+ * So this is a no-op, and the safety has to come from the caller instead. Both
+ * callers provide it, by different means:
+ *
+ * - **`scripts/migrate.ts`** — one process, started deliberately. Single by
+ *   construction rather than by enforcement, exactly like `npm run db:migrate`
+ *   against Postgres.
+ * - **`duckdbMigrate.ts`** — an ephemeral `:memory:` database in the conformance
+ *   suite, private to the process that created it.
+ *
+ * Note what is *not* on that list: the running app. It does not migrate, on any
+ * target. Give it back that job against MotherDuck and this no-op stops being
+ * honest — every instance would migrate at once, with nothing to serialise them.
  */
 class DuckDbAdapter extends DialectAdapterBase {
   override get supportsCreateIfNotExists(): boolean {
