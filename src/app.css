@@ -1,8 +1,47 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
-@import '@fontsource-variable/geist';
-@import '@fontsource-variable/inter';
+
+/* Inter, declared by hand rather than via `@import '@fontsource-variable/inter'`.
+   That import pulls in seven `@font-face` blocks — cyrillic, cyrillic-ext, greek,
+   greek-ext, vietnamese, latin-ext, latin. Each carries a `unicode-range`, so a
+   French page only ever *downloads* the latin file; the other six are dead CSS and
+   six unused woff2 files sitting in the build output. Only the two ranges this app
+   can actually hit are kept.
+
+   The font files are referenced through the package so Vite fingerprints them and
+   serves them immutable — copying them into `static/` would give up that hashing.
+
+   `font-display: swap` matches what fontsource ships: text paints immediately in the
+   fallback and reflows once Inter arrives, rather than staying invisible. See
+   `+layout.svelte` for the preload that keeps that swap window short. */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Rarely reached by French copy, but school names in the dataset can carry
+   transliterated or regional characters — cheap insurance, and never fetched
+   unless such a glyph actually renders. */
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
 
 @custom-variant dark (&:is(.dark *));
 
