@@ -16,7 +16,7 @@ Trois constats, tous publics :
 
 - **L'écart entre la cible et le réel.** Le Pacte enseignant prévoyait que
   **20,5 %** des absences de courte durée soient remplacées en 2023-2024.
-  Un audit cité au Sénat en 2025 conclut que **10 %** l'ont effectivement été.
+  Un audit de la Cour des Comptes cité au Sénat en 2025 conclut que **10 %** l'ont effectivement été.
   ([question au Sénat](https://www.senat.fr/questions/base/2025/qSEQ250705531.html),
   [le Pacte enseignant](https://www.education.gouv.fr/les-missions-complementaires-du-pacte-enseignant-378856))
 
@@ -184,8 +184,11 @@ documentation destinée au public sont en français.
   sous [Licence Ouverte / Etalab](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
 - Fonds de carte : [OpenStreetMap](https://www.openstreetmap.org/copyright) et
   [CARTO](https://carto.com/attribution).
-- Soumissions publiées sur data.gouv.fr sous les conditions du jeu de données.
-- Licence du code : à préciser.
+- Composants d'interface : [shadcn-svelte](https://shadcn-svelte.com), sous
+  licence MIT.
+- Soumissions publiées sur data.gouv.fr sous
+  [Licence Ouverte 2.0](https://www.etalab.gouv.fr/licence-ouverte-open-licence/).
+- Licence du code : [MIT](LICENSE).
 
 Auteur : [Colin Dugeai](https://www.linkedin.com/in/colin-dugeai) —
 contact@vitemonprof.fr
