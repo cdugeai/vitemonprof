@@ -7,6 +7,7 @@
   import { resolve } from '$app/paths';
   import favicon from '$lib/assets/favicon.svg';
   import Navbar from '$lib/components/Navbar.svelte';
+  import ShareDialog from '$lib/components/ShareDialog.svelte';
   // Mounted once here rather than per-page: the toaster is the single portal every
   // `toast()` call renders into, and living in the layout means a toast raised just
   // before a navigation isn't torn down with the page that raised it.
@@ -44,7 +45,7 @@
   </main>
   <footer class="bg-gray-800 py-8 text-white">
     <div class="mx-auto max-w-7xl space-y-3 px-4 text-center">
-      <nav class="text-sm text-gray-300">
+      <nav aria-label="Liens de bas de page" class="text-sm text-gray-300">
         <a
           class="hover:text-white hover:underline"
           target="_blank"
@@ -65,6 +66,22 @@
         >
           Github
         </a>
+        <span>·</span>
+        <!-- A button, not a link: it opens a dialog rather than navigating, and
+             `resolve()` (which the lint rule demands of every internal href)
+             would have nothing to resolve. Styled to sit in the row all the
+             same — the reader should not have to care which is which. -->
+        <ShareDialog>
+          {#snippet trigger(props)}
+            <button
+              {...props}
+              type="button"
+              class="cursor-pointer hover:text-white hover:underline"
+            >
+              Partager
+            </button>
+          {/snippet}
+        </ShareDialog>
         <span>·</span>
         <a class="hover:text-white hover:underline" href={resolve('/mentions-legales')}>
           Mentions légales

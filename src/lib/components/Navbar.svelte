@@ -2,9 +2,14 @@
   import { page } from '$app/stores';
   import { Button } from '$lib/components/ui/button';
   import BookOpen from '@lucide/svelte/icons/book-open';
+  import Share2 from '@lucide/svelte/icons/share-2';
+  import ShareDialog from '$lib/components/ShareDialog.svelte';
 </script>
 
-<nav class="border-b bg-white shadow-sm">
+<!-- Named because the footer has a `<nav>` too. Two unlabelled navigation
+     landmarks are announced identically, so a screen-reader user cycling
+     landmarks cannot tell which one they have landed in. -->
+<nav aria-label="Navigation principale" class="border-b bg-white shadow-sm">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <!-- Header Row: Logo and Region -->
     <div class="flex min-h-16 items-center justify-between gap-2 py-2">
@@ -68,6 +73,25 @@
       >
         À propos
       </Button>
+
+      <!-- `ml-auto` parks it at the far end so it never competes with the three
+           page buttons, and `flex-wrap` still drops it onto its own line rather
+           than squeezing them. Icon-only, so it needs an explicit name: without
+           `aria-label` a screen reader announces "button" and nothing else. -->
+      <ShareDialog>
+        {#snippet trigger(props)}
+          <Button
+            {...props}
+            variant="ghost"
+            size="icon"
+            class="ml-auto text-gray-700 hover:bg-gray-100"
+            aria-label="Partager"
+            title="Partager"
+          >
+            <Share2 class="h-4 w-4" />
+          </Button>
+        {/snippet}
+      </ShareDialog>
     </div>
   </div>
 </nav>

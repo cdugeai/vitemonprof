@@ -84,6 +84,7 @@
     "kysely": "^0.29.5",
     "kysely-postgres-js": "^3.0.0",
     "lru-cache": "^11.5.2",
-    "pako": "^3.0.1"
+    "pako": "^3.0.1",
+    "uqr": "^0.1.3"
   }
 }
